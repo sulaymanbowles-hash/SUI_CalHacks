@@ -14,6 +14,7 @@
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { fromB64, toB64 } from '@mysten/bcs';
+import { Transaction } from '@mysten/sui/transactions';
 import {
   generateNonce,
   generateRandomness,
@@ -21,8 +22,7 @@ import {
   getZkLoginSignature,
   jwtToAddress,
   genAddressSeed,
-} from '@mysten/zklogin';
-import { Transaction } from '@mysten/sui/transactions';
+} from '@mysten/sui/zklogin';
 
 const NETWORK = 'testnet';
 const ENOKI_API = 'https://api.enoki.mystenlabs.com/v1';

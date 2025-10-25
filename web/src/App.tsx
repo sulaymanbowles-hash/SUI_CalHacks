@@ -9,6 +9,7 @@ import { BuyerApp } from './pages/BuyerApp';
 import { AppConsole } from './pages/AppConsole';
 import { MyTickets } from './pages/MyTickets';
 import { CheckIn } from './pages/CheckIn';
+import { AuthCallback } from './pages/AuthCallback';
 
 // Configure Sui network
 const { networkConfig } = createNetworkConfig({
@@ -36,6 +37,7 @@ function App() {
                 <Route path="/my-tickets" element={<MyTickets />} />
                 <Route path="/checkin" element={<CheckIn />} />
                 <Route path="/buy" element={<BuyerApp />} />
+                <Route path="/auth" element={<AuthCallback />} />
               </Routes>
             </div>
           </BrowserRouter>
@@ -46,4 +48,3 @@ function App() {
 }
 
 export default App;
-t

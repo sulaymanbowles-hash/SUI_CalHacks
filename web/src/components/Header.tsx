@@ -2,6 +2,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { ConnectButton, useCurrentAccount } from '@mysten/dapp-kit';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef, useLayoutEffect, useState } from 'react';
+import { ZkLoginButton } from './ZkLoginButton';
+import { getZkLoginSession } from '../lib/zklogin';
 
 const NAV = [
   { href: '/app', label: 'Demo Console' },
@@ -11,6 +13,7 @@ const NAV = [
 export function Header() {
   const location = useLocation();
   const account = useCurrentAccount();
+  const zkSession = getZkLoginSession();
   const { scrollY } = useScroll();
   
   // Shrink on scroll: 64 → 56px
@@ -97,7 +100,7 @@ export function Header() {
           )}
         </nav>
 
-        {/* Actions: Faucet + Connect */}
+        {/* Actions: Faucet + zkLogin + Regular Wallet */}
         <div className="flex items-center gap-3">
           <a
             href="https://faucet.sui.io"
@@ -109,11 +112,21 @@ export function Header() {
             Get test SUI
           </a>
           
-          {!account ? (
+          {/* zkLogin button (shows if OAuth configured) */}
+          {!zkSession && !account && <ZkLoginButton />}
+          
+          {/* Regular wallet connection */}
+          {!zkSession && !account && (
             <div className="rounded-lg focus-within:ring-2 focus-within:ring-[#4DA2FF] focus-within:ring-offset-2 focus-within:ring-offset-[#071521]">
               <ConnectButton />
             </div>
-          ) : (
+          )}
+          
+          {/* Show zkLogin session if active */}
+          {zkSession && <ZkLoginButton />}
+          
+          {/* Show regular wallet if connected */}
+          {!zkSession && account && (
             <button 
               className="group flex items-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2 text-sm text-white/90 transition-colors hover:bg-white/[0.06] focus:outline-none focus:ring-2 focus:ring-[#4DA2FF] focus:ring-offset-2 focus:ring-offset-[#071521]"
               style={{ minHeight: '44px' }}
