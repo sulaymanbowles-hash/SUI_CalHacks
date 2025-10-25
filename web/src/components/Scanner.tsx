@@ -11,6 +11,7 @@ export default function Scanner({ onCode }: { onCode: (qr: string) => void }) {
   const [torchOn, setTorchOn] = React.useState(false);
   const [cameraIds, setCameraIds] = React.useState<string[]>([]);
   const [cameraIdx, setCameraIdx] = React.useState(0);
+  const scanningRef = React.useRef(false);
 
   const BarcodeDetectorAny: any = (globalThis as any).BarcodeDetector;
 
@@ -28,6 +29,7 @@ export default function Scanner({ onCode }: { onCode: (qr: string) => void }) {
       video.srcObject = s;
       await video.play();
       setState("scanning");
+      scanningRef.current = true;
 
       // detect torch support
       const track = s.getVideoTracks()[0];
@@ -46,10 +48,11 @@ export default function Scanner({ onCode }: { onCode: (qr: string) => void }) {
         BarcodeDetectorAny && new BarcodeDetectorAny({ formats: ["qr_code"] });
       if (detector) {
         const loop = async () => {
-          if (state !== "scanning") return;
+          if (!scanningRef.current) return;
           try {
             const codes = await detector.detect(video);
             if (codes?.[0]?.rawValue) {
+              scanningRef.current = false;
               setState("found");
               vibration();
               onCode(codes[0].rawValue);
@@ -74,6 +77,7 @@ export default function Scanner({ onCode }: { onCode: (qr: string) => void }) {
   }
 
   function stop() {
+    scanningRef.current = false;
     stream?.getTracks().forEach((t) => t.stop());
     setStream(null);
     setState("idle");

@@ -20,6 +20,7 @@
   /* Brand & Accents */
   --brand: #4DA2FF;
   --brand-2: #11C7C5;
+  --accent: #5AE0E5;
   --success: #2ED67A;
   --warning: #FFB020;
   --danger: #FF5C6C;
@@ -53,6 +54,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  font-feature-settings: "tnum" 0;
 }
 
 /* Canvas gradient wash (subtle) */
@@ -147,6 +149,7 @@ h3 {
 .tabular,
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 /* All-caps labels */
@@ -222,17 +225,23 @@ h3 {
   overflow: hidden;
 }
 
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .btn-primary {
   background: var(--brand);
   color: #fff;
+  border-radius: var(--radius);
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background: #5DADFF;
   transform: scale(1.01);
 }
 
-.btn-primary:active {
+.btn-primary:active:not(:disabled) {
   transform: scale(0.98);
 }
 
@@ -240,19 +249,20 @@ h3 {
   border: 1px solid var(--border);
   background: transparent;
   color: var(--ink);
+  border-radius: var(--radius);
 }
 
-.btn-outline:hover {
+.btn-outline:hover:not(:disabled) {
   background: var(--surface-1);
 }
 
 .btn-ghost {
   background: var(--surface-2);
-  color: var(--ink);
+  color: var (--ink);
   border: none;
 }
 
-.btn-ghost:hover {
+.btn-ghost:hover:not(:disabled) {
   background: var(--surface-1);
 }
 
