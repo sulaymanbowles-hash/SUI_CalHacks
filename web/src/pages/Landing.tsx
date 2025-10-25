@@ -1,8 +1,9 @@
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { RoyaltyBreakdown } from '../components/RoyaltyBreakdown';
 import { FadeRise, Stagger, item } from '../components/motion/Reveals';
 import { spawnRipple } from '../utils/ripple';
+import Hero from '../components/hero/Hero';
+import { Link } from 'react-router-dom';
 
 // Marketplace row with real event density
 function MarketplaceRow() {
@@ -50,102 +51,8 @@ function MarketplaceRow() {
 export function Landing() {
   return (
     <main className="min-h-screen">
-      {/* Hero Section with Two-Card Persona Choice */}
-      <section className="relative overflow-hidden bg-vignette noise">
-        <div className="mx-auto max-w-screen-xl px-6 py-24">
-          {/* Intro */}
-          <div className="mb-16 text-center">
-            <FadeRise>
-              <div className="mx-auto mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/[0.02] px-3 py-1.5 text-xs text-muted backdrop-blur-sm">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-75"></span>
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-brand"></span>
-                </span>
-                Built on Sui
-              </div>
-            </FadeRise>
-            <FadeRise as="h1" delay={0.08} className="mx-auto max-w-[16ch] font-[Inter_Tight] text-[44px] leading-[1.1] tracking-tight text-ink sm:text-[56px]">
-              Tickets that pay creators on every resale
-            </FadeRise>
-            <FadeRise delay={0.14} className="mx-auto mt-5 max-w-[65ch] text-[17px] leading-[1.6] text-muted">
-              Own your ticket, list it in seconds. On resale, creators and organizers are paid automatically.
-            </FadeRise>
-          </div>
-
-          {/* Two-Card Choice */}
-          <Stagger delay={0.2}>
-            <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-2">
-              {/* Card 1: Buyer/Fan */}
-              <motion.div variants={item} className="card group cursor-pointer transition-all hover:scale-[1.02]">
-                <Link to="/app" className="block">
-                  <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand/10 transition-all group-hover:bg-brand/15">
-                    <svg className="h-8 w-8 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                    </svg>
-                  </div>
-                  <h2 className="mb-2 font-[Inter_Tight] text-2xl font-semibold tracking-tight text-ink">
-                    I'm here to go to a show
-                  </h2>
-                  <p className="mb-6 leading-[1.6] text-muted">
-                    Browse events, purchase tickets, and resell if your plans change. No screenshots, just real ownership.
-                  </p>
-                  <div className="mb-3 flex items-center gap-2 text-brand">
-                    <span className="text-[15px] font-medium">Browse events</span>
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                  </div>
-                  <a href="#how" className="text-sm text-muted hover:text-ink hover:underline">
-                    How resale works →
-                  </a>
-                </Link>
-              </motion.div>
-
-              {/* Card 2: Organizer */}
-              <motion.div variants={item} className="card group cursor-pointer transition-all hover:scale-[1.02]">
-                <Link to="/console" className="block">
-                  <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 transition-all group-hover:bg-accent/15">
-                    <svg className="h-8 w-8 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                    </svg>
-                  </div>
-                  <h2 className="mb-2 font-[Inter_Tight] text-2xl font-semibold tracking-tight text-ink">
-                    I'm running a show
-                  </h2>
-                  <p className="mb-6 leading-[1.6] text-muted">
-                    Create events, mint tickets, and earn royalties on every resale. Scan tickets at the door with one tap.
-                  </p>
-                  <div className="mb-3 flex items-center gap-2 text-accent">
-                    <span className="text-[15px] font-medium">Open Organizer tools</span>
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                  </div>
-                  <Link to="/checkin" className="text-sm text-muted hover:text-ink hover:underline">
-                    Scan tickets at the door →
-                  </Link>
-                </Link>
-              </motion.div>
-            </div>
-          </Stagger>
-
-          {/* Trust Signals */}
-          <FadeRise delay={0.4}>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-xs text-muted">
-              <div className="flex items-center gap-1.5">
-                <svg className="h-3.5 w-3.5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                <span>Verified organizers</span>
-              </div>
-              <span className="text-white/20">•</span>
-              <span>No platform fees</span>
-              <span className="text-white/20">•</span>
-              <span>Instant transfers</span>
-            </div>
-          </FadeRise>
-        </div>
-      </section>
+      {/* New Hero with backdrop */}
+      <Hero />
 
       {/* Marketplace Grid */}
       <MarketplaceRow />

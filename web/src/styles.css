@@ -344,6 +344,105 @@ textarea:focus-visible {
 }
 
 /* ============================================================================
+   Form Inputs (Console)
+   ============================================================================ */
+
+.input-field {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: var(--ink);
+  font-size: 15px;
+  transition: all 150ms ease-out;
+}
+
+.input-field::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.input-field:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.input-field:focus {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--brand);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(77, 162, 255, 0.1);
+}
+
+.input-field:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Date and time inputs - larger for better usability */
+input[type="date"],
+input[type="time"] {
+  min-height: 48px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Range Slider */
+.range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+  transition: background 150ms ease-out;
+}
+
+.range-slider:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--brand);
+  cursor: pointer;
+  border: 3px solid var(--canvas);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 120ms ease-out;
+}
+
+.range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.range-slider::-webkit-slider-thumb:active {
+  transform: scale(0.95);
+}
+
+.range-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--brand);
+  cursor: pointer;
+  border: 3px solid var(--canvas);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 120ms ease-out;
+}
+
+.range-slider::-moz-range-thumb:hover {
+  transform: scale(1.1);
+}
+
+.range-slider::-moz-range-thumb:active {
+  transform: scale(0.95);
+}
+
+/* ============================================================================
    Hash display (monospace for addresses/IDs)
    ============================================================================ */
 
@@ -353,10 +452,6 @@ textarea:focus-visible {
   font-size: 13px;
   letter-spacing: -0.01em;
 }
-
-/* ============================================================================
-   Custom utilities
-   ============================================================================ */
 
 /* Contrast-safe text */
 .text-safe {
