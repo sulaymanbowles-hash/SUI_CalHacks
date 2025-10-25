@@ -79,8 +79,10 @@
     padding: 12px;
   }
 
-  /* Button base styles */
+  /* Button base styles with ripple support */
   .btn {
+    position: relative;
+    overflow: hidden;
     border-radius: 12px;
     font-weight: 500;
     transition: transform 200ms ease-out;
@@ -97,13 +99,14 @@
   }
 
   /* Ripple effect for buttons */
+  .btn .ripple,
   .ripple {
     position: absolute;
     border-radius: 9999px;
-    pointer-events: none;
     background: rgba(255, 255, 255, 0.25);
     transform: scale(0);
-    animation: ripple 520ms ease-out forwards;
+    animation: ripple 0.52s ease-out forwards;
+    pointer-events: none;
   }
 
   @keyframes ripple {
@@ -125,6 +128,12 @@
     50% {
       opacity: 0.6;
     }
+  }
+
+  /* Performance optimization: content-visibility for large sections */
+  .section {
+    content-visibility: auto;
+    contain-intrinsic-size: 800px;
   }
 }
 
@@ -184,7 +193,7 @@
     background: radial-gradient(circle, var(--tw-gradient-stops));
   }
 
-  /* Edge vignette background */
+  /* Edge vignette background - static for performance */
   .bg-vignette {
     background: 
       radial-gradient(1200px 600px at 80% -10%, rgba(77, 162, 255, 0.14), transparent 60%),
@@ -220,6 +229,20 @@
   /* Prose max width */
   .prose {
     max-width: 65ch;
+  }
+
+  /* Will-change for transform animations only */
+  .will-change-transform {
+    will-change: transform;
+  }
+
+  /* Hover states - only animate transform, not shadow */
+  .hover-lift {
+    transition: transform 200ms ease-out;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
   }
 }
 

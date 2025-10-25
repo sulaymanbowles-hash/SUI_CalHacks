@@ -3,6 +3,7 @@ import { createNetworkConfig, SuiClientProvider, WalletProvider } from '@mysten/
 import { getFullnodeUrl } from '@mysten/sui/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Header } from './components/Header';
+import { ScrollProgress } from './components/motion/ScrollProgress';
 import { Landing } from './pages/Landing';
 import { BuyerApp } from './pages/BuyerApp';
 import { AppConsole } from './pages/AppConsole';
@@ -23,6 +24,7 @@ function App() {
       <SuiClientProvider networks={networkConfig} defaultNetwork="testnet">
         <WalletProvider autoConnect>
           <BrowserRouter>
+            <ScrollProgress />
             <div className="min-h-screen">
               <Header />
               <Routes>
