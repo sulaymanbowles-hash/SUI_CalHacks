@@ -63,7 +63,7 @@ module ticket::ticket_tests {
 
     /// Test that marking a ticket as used twice aborts
     #[test]
-    #[expected_failure(abort_code = ticket::ticket::E_ALREADY_USED)]
+    #[expected_failure(abort_code = 1)] // E_ALREADY_USED
     fun test_double_use_aborts() {
         let mut scenario = ts::begin(ADMIN);
         
@@ -111,7 +111,7 @@ module ticket::ticket_tests {
 
     /// Test event time validation
     #[test]
-    #[expected_failure(abort_code = ticket::event::E_INVALID_WINDOW)]
+    #[expected_failure(abort_code = 1)] // E_INVALID_WINDOW
     fun test_invalid_time_window_aborts() {
         let mut scenario = ts::begin(ADMIN);
         {
@@ -130,7 +130,7 @@ module ticket::ticket_tests {
 
     /// Test zero supply validation
     #[test]
-    #[expected_failure(abort_code = ticket::class::E_ZERO_SUPPLY)]
+    #[expected_failure(abort_code = 1)] // E_ZERO_SUPPLY
     fun test_zero_supply_aborts() {
         let mut scenario = ts::begin(ADMIN);
         

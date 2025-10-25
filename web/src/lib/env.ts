@@ -1,40 +1,84 @@
 /**
- * Environment configuration for the frontend
+ * Environment configuration for testnet deployment
  * 
- * Reads from Vite environment variables (VITE_* prefix)
- * These should be set in a .env file or passed at build time
+ * Reads from Vite's import.meta.env (set via .env files or build-time)
+ * All values are public and safe to bundle
  */
 
-// Network configuration
-export const NETWORK = (import.meta.env.VITE_NETWORK || 'testnet') as 'testnet' | 'mainnet';
-export const RPC_URL = import.meta.env.VITE_RPC_URL || 'https://fullnode.testnet.sui.io:443';
+export const NETWORK = 'testnet' as const;
 
-// Package and policy IDs (populated after deployment)
-export const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID || '';
-export const POLICY_ID = import.meta.env.VITE_POLICY_ID || '';
+// Package and Policy IDs (deployed on testnet)
+export const PACKAGE_ID = 
+  import.meta.env.VITE_PACKAGE_ID || 
+  '0x15ac55e21409bf56cd3f93552a85c716330b07af4fdbd3b4996085cc59e15769';
 
-// Wallet addresses (for display/reference only)
-export const ADDR_SELLER = import.meta.env.VITE_ADDR_SELLER || '';
-export const ADDR_BUYER = import.meta.env.VITE_ADDR_BUYER || '';
+export const POLICY_ID = 
+  import.meta.env.VITE_POLICY_ID || 
+  '0x6c9a891026c1031c138c6f132cf596bae516d834709c03e2dddceeb5aa8b6456';
 
-// Validation helper
-export function validateEnv(): { valid: boolean; missing: string[] } {
-  const required = { PACKAGE_ID, POLICY_ID, ADDR_SELLER, ADDR_BUYER };
-  const missing = Object.entries(required)
-    .filter(([_, value]) => !value)
-    .map(([key]) => key);
+// Walrus configuration (optional)
+export const WALRUS_PUBLISHER_URL = 
+  import.meta.env.VITE_WALRUS_PUBLISHER_URL || 
+  'https://publisher.walrus-testnet.walrus.space';
+
+export const WALRUS_AGGREGATOR_URL = 
+  import.meta.env.VITE_WALRUS_AGGREGATOR_URL || 
+  'https://aggregator.walrus-testnet.walrus.space';
+
+/**
+ * Feature flags for development and testnet
+ */
+export const flags = {
+  /**
+   * Use ephemeral browser-based signer for testnet dev
+   * WARNING: Testnet only! Never use in production
+   */
+  useEphemeralSigner: true,
   
-  return {
-    valid: missing.length === 0,
-    missing,
-  };
-}
+  /**
+   * Enable sponsored transactions (gas paid by backend)
+   * Reserved for future implementation
+   */
+  useSponsor: false,
+  
+  /**
+   * Show fiat onramp UI (disabled button with tooltip)
+   * Actual onramp requires mainnet + KYC provider
+   */
+  showFiatOnramp: true,
+  
+  /**
+   * Show Walrus upload functionality
+   */
+  enableWalrusUpload: true,
+} as const;
 
-export default {
-  NETWORK,
-  RPC_URL,
-  PACKAGE_ID,
-  POLICY_ID,
-  ADDR_SELLER,
-  ADDR_BUYER,
-};
+/**
+ * Royalty split configuration (90/8/2)
+ */
+export const ROYALTY_SPLITS = {
+  artist: 0.90,
+  organizer: 0.08,
+  platform: 0.02,
+} as const;
+
+/**
+ * Testnet faucet URL for dev wallet funding
+ */
+export const TESTNET_FAUCET = 'https://faucet.sui.io';
+
+/**
+ * Development mode detection
+ */
+export const isDev = import.meta.env.DEV;
+
+/**
+ * Type-safe environment check
+ */
+export function requireEnv(key: string): string {
+  const value = import.meta.env[key];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+  return value;
+}

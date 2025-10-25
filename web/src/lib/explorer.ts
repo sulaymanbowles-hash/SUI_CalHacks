@@ -11,26 +11,29 @@ const EXPLORER_URLS: Record<Network, string> = {
 
 /**
  * Build a SuiScan explorer URL for a transaction digest
+ * Always includes ?network=testnet for testnet transactions
  */
 export function getExplorerTxUrl(digest: string, network: Network = NETWORK): string {
   const base = EXPLORER_URLS[network];
-  return `${base}/tx/${digest}`;
+  return `${base}/tx/${digest}?network=${network}`;
 }
 
 /**
  * Build a SuiScan explorer URL for an object
+ * Always includes ?network=testnet for testnet objects
  */
 export function getExplorerObjectUrl(objectId: string, network: Network = NETWORK): string {
   const base = EXPLORER_URLS[network];
-  return `${base}/object/${objectId}`;
+  return `${base}/object/${objectId}?network=${network}`;
 }
 
 /**
  * Build a SuiScan explorer URL for an address
+ * Always includes ?network=testnet for testnet addresses
  */
 export function getExplorerAddressUrl(address: string, network: Network = NETWORK): string {
   const base = EXPLORER_URLS[network];
-  return `${base}/account/${address}`;
+  return `${base}/account/${address}?network=${network}`;
 }
 
 /**
@@ -42,3 +45,8 @@ export function shortenAddress(address: string, chars = 4): string {
   if (address.length <= chars * 2 + 2) return address;
   return `${address.slice(0, chars + 2)}...${address.slice(-chars)}`;
 }
+
+// Convenient aliases for testnet
+export const explorerTx = (digest: string) => getExplorerTxUrl(digest, 'testnet');
+export const explorerObj = (objectId: string) => getExplorerObjectUrl(objectId, 'testnet');
+export const explorerAddr = (address: string) => getExplorerAddressUrl(address, 'testnet');

@@ -21,8 +21,12 @@ if (!PACKAGE_ID) {
 
 // Load buyer keypair
 const buyerPath = path.join(__dirname, '../.secrets/BUYER.json');
-const { secretKeyB64 } = JSON.parse(fs.readFileSync(buyerPath, 'utf-8'));
-const buyerKeypair = Ed25519Keypair.fromSecretKey(fromB64(secretKeyB64));
+const buyerData = JSON.parse(fs.readFileSync(buyerPath, 'utf-8'));
+
+// Load keypair - support both formats (privateKey for Bech32, secretKeyB64 for legacy)
+const buyerKeypair = buyerData.privateKey 
+  ? Ed25519Keypair.fromSecretKey(buyerData.privateKey) // Bech32 format
+  : Ed25519Keypair.fromSecretKey(fromB64(buyerData.secretKeyB64).slice(0, 32)); // Legacy format
 
 // Initialize client
 const client = new SuiClient({ url: getFullnodeUrl(NETWORK) });

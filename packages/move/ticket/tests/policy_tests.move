@@ -1,6 +1,7 @@
 #[test_only]
 module ticket::policy_tests {
     use sui::test_scenario::{Self as ts};
+    use sui::package::Publisher;
     use ticket::policy_admin;
 
     const ARTIST: address = @0x1;
@@ -13,15 +14,28 @@ module ticket::policy_tests {
     #[test]
     fun test_create_policy_succeeds() {
         let mut scenario = ts::begin(ARTIST);
+        
+        // Initialize the module to get Publisher
         {
             let ctx = ts::ctx(&mut scenario);
+            policy_admin::init_for_testing(ctx);
+        };
+        
+        // Create policy using the Publisher
+        ts::next_tx(&mut scenario, ARTIST);
+        {
+            let publisher = ts::take_from_sender<Publisher>(&scenario);
+            let ctx = ts::ctx(&mut scenario);
             policy_admin::create_policy(
+                &publisher,
                 ARTIST,
                 ORGANIZER,
                 PLATFORM,
                 ctx
             );
+            ts::return_to_sender(&scenario, publisher);
         };
+        
         ts::end(scenario);
     }
 
@@ -30,17 +44,28 @@ module ticket::policy_tests {
     fun test_multiple_policies() {
         let mut scenario = ts::begin(ARTIST);
         
-        // Create first policy
+        // Initialize the module to get Publisher
         {
             let ctx = ts::ctx(&mut scenario);
-            policy_admin::create_policy(ARTIST, ORGANIZER, PLATFORM, ctx);
+            policy_admin::init_for_testing(ctx);
+        };
+        
+        // Create first policy
+        ts::next_tx(&mut scenario, ARTIST);
+        {
+            let publisher = ts::take_from_sender<Publisher>(&scenario);
+            let ctx = ts::ctx(&mut scenario);
+            policy_admin::create_policy(&publisher, ARTIST, ORGANIZER, PLATFORM, ctx);
+            ts::return_to_sender(&scenario, publisher);
         };
         
         // Create second policy (different recipients)
-        ts::next_tx(&mut scenario, ORGANIZER);
+        ts::next_tx(&mut scenario, ARTIST);
         {
+            let publisher = ts::take_from_sender<Publisher>(&scenario);
             let ctx = ts::ctx(&mut scenario);
-            policy_admin::create_policy(ORGANIZER, PLATFORM, ARTIST, ctx);
+            policy_admin::create_policy(&publisher, ORGANIZER, PLATFORM, ARTIST, ctx);
+            ts::return_to_sender(&scenario, publisher);
         };
         
         ts::end(scenario);

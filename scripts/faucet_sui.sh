@@ -20,7 +20,13 @@ fi
 echo "Requesting SUI for $ADDR ..."
 
 # Request from faucet
-if sui client faucet --address "$ADDR" "${OPTS[@]}" 2>&1 | tee /tmp/faucet_out.txt; then
+if [[ ${#OPTS[@]} -gt 0 ]]; then
+  sui client faucet --address "$ADDR" "${OPTS[@]}" 2>&1 | tee /tmp/faucet_out.txt
+else
+  sui client faucet --address "$ADDR" 2>&1 | tee /tmp/faucet_out.txt
+fi
+
+if [[ $? -eq 0 ]]; then
   echo "✔ Faucet request sent"
 else
   if grep -q "rate" /tmp/faucet_out.txt; then
