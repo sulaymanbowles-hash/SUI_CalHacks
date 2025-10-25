@@ -268,11 +268,22 @@ export function Landing() {
 
       {/* Footer */}
       <footer className="border-t border-white/10 py-8">
-        <div class="mx-auto max-w-screen-xl px-6">
-          <div class="flex flex-col items-center justify-between gap-4 text-sm text-white/60 sm:flex-row">
+        <div className="mx-auto max-w-screen-xl px-6">
+          <div className="flex flex-col items-center justify-between gap-4 text-sm text-white/60 sm:flex-row">
             <div>© 2025 DropKit. Built on Sui.</div>
-            <div class="flex gap-6">
+            <div className="flex gap-6">
               <a
+                href="https://github.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors hover:text-white/90"
+              >
+                GitHub
+              </a>
+              <a
+                href="https://sui.io"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="transition-colors hover:text-white/90"
               >
                 Sui Docs
