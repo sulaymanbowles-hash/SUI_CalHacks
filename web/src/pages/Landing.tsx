@@ -53,92 +53,95 @@ export function Landing() {
     <main className="min-h-screen">
       {/* Split Hero Section */}
       <section className="relative overflow-hidden bg-vignette noise">
-        <div className="mx-auto grid max-w-screen-xl grid-cols-1 gap-12 px-6 py-24 md:grid-cols-2 md:gap-16">
+        <div className="mx-auto grid max-w-screen-xl grid-cols-1 gap-12 px-6 py-32 md:grid-cols-2 md:gap-16 md:py-24">
           {/* Left: Copy + CTA */}
           <div className="flex flex-col justify-center">
             <FadeRise>
-              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/[0.02] px-3 py-1.5 text-xs text-[var(--muted)]">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/[0.02] px-3 py-1.5 text-xs text-muted backdrop-blur-sm">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-75"></span>
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-brand"></span>
+                </span>
                 Built on Sui
               </div>
             </FadeRise>
-            <FadeRise as="h1" delay={0.06} className="mt-6 font-[Inter_Tight] text-[40px] leading-[1.15] tracking-tight text-[#DCE7F0] sm:text-[56px]">
+            <FadeRise as="h1" delay={0.08} className="mt-6 font-[Inter_Tight] text-[44px] leading-[1.1] tracking-tight text-ink sm:text-[56px]">
               Tickets that pay creators on every resale
             </FadeRise>
-            <FadeRise delay={0.12} className="mt-4 max-w-[65ch] text-lg leading-[1.5] text-[var(--muted)]">
-              Own your ticket, list it in seconds, and let transfer policies handle royalties automatically.
+            <FadeRise delay={0.14} className="mt-5 max-w-[60ch] text-[17px] leading-[1.6] text-muted">
+              Own your ticket, list it in seconds, and let transfer policies handle royalties automatically. No platform fees, just network costs.
             </FadeRise>
-            <FadeRise delay={0.18}>
-              <div className="mt-8 flex flex-wrap gap-3">
+            <FadeRise delay={0.2}>
+              <div className="mt-9 flex flex-wrap items-center gap-3">
                 <Link to="/app">
                   <button
                     onPointerDown={spawnRipple}
-                    className="btn btn-primary rounded-xl px-5 py-3 font-medium text-white hover:scale-[1.02] active:scale-[0.98]"
+                    className="btn btn-primary rounded-xl px-6 py-3.5 text-[15px] font-semibold text-white shadow-[0_4px_16px_rgba(77,162,255,0.24)] transition-all hover:scale-[1.02] hover:shadow-[0_6px_20px_rgba(77,162,255,0.32)] active:scale-[0.98]"
                   >
                     Get Tickets
                   </button>
                 </Link>
                 <a href="#how">
-                  <button className="rounded-xl border border-white/14 px-5 py-3 text-white/85 transition-colors hover:bg-white/5">
+                  <button className="rounded-xl border border-white/14 bg-white/[0.02] px-6 py-3.5 text-[15px] font-medium text-ink backdrop-blur-sm transition-all hover:bg-white/5 hover:border-white/20">
                     How it works
                   </button>
                 </a>
               </div>
             </FadeRise>
-            <FadeRise delay={0.24}>
-              <div className="mt-4 flex items-center gap-2 text-xs text-white/50">
-                <span>Network fees apply. No platform fees.</span>
-                <span className="text-white/30">•</span>
-                <a href="#" className="flex items-center gap-1 text-white/60 hover:text-white/80">
-                  <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+            <FadeRise delay={0.26}>
+              <div className="mt-5 flex items-center gap-3 text-xs text-muted">
+                <div className="flex items-center gap-1.5">
+                  <svg className="h-3.5 w-3.5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  Verified organizer
-                </a>
+                  <span>Verified organizers</span>
+                </div>
+                <span className="text-white/20">•</span>
+                <span>No platform fees</span>
+                <span className="text-white/20">•</span>
+                <span>Instant transfers</span>
               </div>
             </FadeRise>
           </div>
 
           {/* Right: Live Product Object with Parallax */}
-          <FadeRise delay={0.15}>
+          <FadeRise delay={0.18}>
             <div className="relative flex items-center">
               <HeroParallax>
-                <div className="card w-full p-6">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-                    <div className="aspect-[3/4] w-full overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-[#4DA2FF]/20 to-[#5AE0E5]/20 sm:w-32">
+                <div className="card w-full overflow-hidden p-0 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
+                  <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start">
+                    <div className="aspect-[3/4] w-full overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-brand/20 to-accent/20 sm:w-36 shadow-lg">
                       <div className="flex h-full items-center justify-center text-white/30">
-                        <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                        <svg className="h-14 w-14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
                         </svg>
                       </div>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="truncate font-medium text-[#DCE7F0]">Nova Festival 2025</h3>
-                      <p className="text-sm text-[var(--muted)]">GA • Seat C-14</p>
-                      <p className="mt-1 text-xs text-white/50">June 22 • Austin, TX</p>
-                      <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                        <div className="chip">
-                          <div className="text-xs text-white/60">Price</div>
-                          <div className="font-medium tabular-nums text-[#DCE7F0]">$62.00</div>
-                        </div>
-                        <div className="chip">
-                          <div className="text-xs text-white/60">Royalty</div>
-                          <div className="font-medium tabular-nums text-[#DCE7F0]">10%</div>
-                        </div>
-                        <div className="chip">
-                          <div className="text-xs text-white/60">Organizer</div>
-                          <div className="font-medium tabular-nums text-[#DCE7F0]">8%</div>
-                        </div>
-                        <div className="chip">
-                          <div className="text-xs text-white/60">Network fee</div>
-                          <div className="font-medium tabular-nums text-[#DCE7F0]">$0.03</div>
+                      <h3 className="font-[Inter_Tight] text-lg font-semibold tracking-tight text-ink">Nova Festival 2025</h3>
+                      <p className="mt-1 text-sm text-muted">June 22 • Austin, TX</p>
+                      <div className="mt-4 flex items-center gap-2">
+                        <span className="chip bg-brand/12 border border-brand/20 text-xs font-medium text-brand">Listed</span>
+                        <span className="chip bg-surface-2 border border-border text-xs font-semibold tabular text-ink">125.00 SUI</span>
+                      </div>
+                      <div className="mt-4 rounded-lg border border-border bg-surface-1/40 p-3">
+                        <div className="mb-1.5 text-xs text-muted">Royalty split on resale</div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-muted">Artist: 10%</span>
+                          <span className="text-white/30">•</span>
+                          <span className="text-muted">Organizer: 8%</span>
                         </div>
                       </div>
-                      <button className="mt-5 w-full rounded-xl bg-[#4DA2FF] px-4 py-2.5 font-medium text-white transition-transform duration-200 ease-out hover:scale-[1.01]">
-                        Buy now
-                      </button>
                     </div>
                   </div>
-                  <p className="mt-3 text-center text-xs text-white/50">Preview shows a real transaction split</p>
+                  <div className="flex gap-2 border-t border-border bg-surface-1/40 p-4">
+                    <button className="flex-1 rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]">
+                      Purchase
+                    </button>
+                    <button className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-surface-2 hover:text-ink">
+                      Details
+                    </button>
+                  </div>
                 </div>
               </HeroParallax>
             </div>
