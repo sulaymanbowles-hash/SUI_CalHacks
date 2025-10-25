@@ -1,0 +1,56 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Build outputs
+dist/
+build/
+out/
+*.js.map
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+scripts/env.sh
+!scripts/env.example.sh
+.secrets/
+
+# Sui Move
+move/build/
+*.move.lock
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Private keys (double-check these never get committed)
+*.keystore
+*.pem
+*.key
+sui.keystore

@@ -1,0 +1,273 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Design tokens */
+  :root {
+    --surface-1: rgba(255, 255, 255, 0.02);
+    --surface-2: rgba(255, 255, 255, 0.04);
+    --border-1: rgba(255, 255, 255, 0.12);
+    --shadow-card: 0 8px 24px rgba(3, 15, 28, 0.12);
+    --radius: 14px;
+    --ink: #DCE7F0;
+    --muted: rgba(220, 231, 240, 0.72);
+    --brand: #4DA2FF;
+    --canvas: #071521;
+  }
+
+  body {
+    @apply bg-[#071521] text-[#DCE7F0] antialiased;
+    font-feature-settings: 'tnum'; /* tabular numerals by default */
+    font-size: 16px;
+  }
+
+  /* Focus states for accessibility - visible high-contrast rings */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-[#4DA2FF] ring-offset-2 ring-offset-[#071521];
+    outline-offset: 2px;
+  }
+
+  /* Ensure proper heading hierarchy with Inter Tight */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter Tight', system-ui, -apple-system, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    line-height: 1.15;
+    color: #DCE7F0;
+  }
+
+  h1 {
+    letter-spacing: -0.03em;
+    max-width: 16ch;
+  }
+
+  /* Body text */
+  p {
+    line-height: 1.5;
+    max-width: 65ch;
+  }
+
+  /* Respect prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Single card recipe used site-wide */
+  .card {
+    border: 1px solid var(--border-1);
+    background: linear-gradient(0deg, var(--surface-1), var(--surface-1)),
+                radial-gradient(120% 80% at 0% 100%, rgba(77, 162, 255, 0.08), transparent 60%);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    padding: 24px;
+  }
+
+  /* Solid chips for metrics - no nested borders */
+  .chip {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 12px;
+  }
+
+  /* Button base styles */
+  .btn {
+    border-radius: 12px;
+    font-weight: 500;
+    transition: transform 200ms ease-out;
+  }
+
+  .btn-primary {
+    background: #4DA2FF;
+    color: #fff;
+  }
+
+  .btn-outline {
+    border: 1px solid var(--border-1);
+    color: #E6F0F7;
+  }
+
+  /* Ripple effect for buttons */
+  .ripple {
+    position: absolute;
+    border-radius: 9999px;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(0);
+    animation: ripple 520ms ease-out forwards;
+  }
+
+  @keyframes ripple {
+    to {
+      transform: scale(1);
+      opacity: 0;
+    }
+  }
+
+  /* QR TTL pulse */
+  .pulse {
+    animation: pulse 1s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 0.9;
+    }
+    50% {
+      opacity: 0.6;
+    }
+  }
+}
+
+@layer utilities {
+  /* Sui-themed glass effect */
+  .glass {
+    @apply backdrop-blur-xl;
+    background: linear-gradient(135deg, 
+      rgba(15, 20, 25, 0.6) 0%, 
+      rgba(15, 20, 25, 0.4) 100%
+    );
+    border: 1px solid rgba(77, 168, 255, 0.1);
+  }
+
+  /* Sui gradient border */
+  .gradient-border {
+    position: relative;
+    background: linear-gradient(135deg, 
+      rgba(77, 168, 255, 0.03) 0%, 
+      rgba(0, 212, 255, 0.03) 100%
+    );
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, 
+      rgba(77, 168, 255, 0.4) 0%, 
+      rgba(0, 212, 255, 0.4) 50%,
+      rgba(157, 108, 255, 0.3) 100%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Sui glow effect */
+  .sui-glow {
+    box-shadow: 0 0 40px rgba(77, 168, 255, 0.2),
+                0 0 80px rgba(0, 212, 255, 0.1);
+  }
+
+  /* Text gradient */
+  .text-gradient-sui {
+    background: linear-gradient(135deg, #4DA8FF 0%, #00D4FF 50%, #00E5CC 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Radial gradient utility for backgrounds */
+  .bg-gradient-radial {
+    background: radial-gradient(circle, var(--tw-gradient-stops));
+  }
+
+  /* Edge vignette background */
+  .bg-vignette {
+    background: 
+      radial-gradient(1200px 600px at 80% -10%, rgba(77, 162, 255, 0.14), transparent 60%),
+      radial-gradient(900px 500px at 0% 100%, rgba(192, 230, 255, 0.08), transparent 60%);
+  }
+
+  /* Noise texture overlay */
+  .noise::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+  }
+
+  .noise > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Tabular numerals for fees and prices */
+  .tabular-nums {
+    font-feature-settings: 'tnum';
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Animation delay utility */
+  .animate-delay-1000 {
+    animation-delay: 1s;
+  }
+
+  /* Prose max width */
+  .prose {
+    max-width: 65ch;
+  }
+}
+
+/* Consistent type system */
+h1, h2, h3 {
+  font-feature-settings: 'tnum', 'ss01';
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #030F1C;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Float animation for orbs */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(-20px) translateX(10px);
+  }
+}
+
+.animate-float {
+  animation: float 20s ease-in-out infinite;
+}

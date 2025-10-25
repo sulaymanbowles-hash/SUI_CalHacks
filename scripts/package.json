@@ -1,0 +1,29 @@
+{
+  "name": "dropkit-scripts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Automation scripts for DropKit testnet development",
+  "scripts": {
+    "postinstall": "echo '✔ Scripts dependencies installed'",
+    "gen:wallet:seller": "tsx gen_wallet.ts SELLER",
+    "gen:wallet:buyer": "tsx gen_wallet.ts BUYER",
+    "faucet:sui:seller": "bash faucet_sui.sh $(jq -r .address ../.secrets/SELLER.json)",
+    "faucet:sui:buyer": "bash faucet_sui.sh $(jq -r .address ../.secrets/BUYER.json)",
+    "faucet:usdc:buyer": "USDC_OWNER=$(jq -r .address ../.secrets/BUYER.json) tsx faucet_usdc.ts",
+    "walrus:check": "tsx walrus_check.ts"
+  },
+  "dependencies": {
+    "@mysten/sui": "^1.0.0",
+    "node-fetch": "^3.3.2",
+    "open": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
