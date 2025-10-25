@@ -1,168 +1,44 @@
-import { useState } from 'react';
-import { useCurrentAccount } from '@mysten/dapp-kit';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Ticket as TicketIcon, ShoppingBag } from 'lucide-react';
-import { TicketCard } from '../components/TicketCard';
-import { ListModal } from '../components/ListModal';
-import { QRDrawer } from '../components/QRDrawer';
-import { TransferModal } from '../components/TransferModal';
+import { Ticket as TicketIcon, ShoppingBag, ExternalLink, Loader2 } from 'lucide-react';
 import { FadeRise } from '../components/FadeRise';
-
-type TicketStatus = 'owned' | 'listed' | 'used' | 'transferred';
-type TabFilter = 'upcoming' | 'listed' | 'past';
-
-interface Ticket {
-  id: string;
-  title: string;
-  posterUrl: string;
-  dateISO: string;
-  venue: string;
-  seat: { section?: string; row?: string; seat?: string };
-  status: TicketStatus;
-  policyObjectId: string;
-  purchaseTx: string;
-  royaltyPct: number;
-  organizerPct: number;
-  networkFeeAtBuy: number;
-  listing?: {
-    priceSUI: number;
-    createdAtISO: string;
-    kioskId: string;
-    listingId: string;
-  };
-}
-
-// Mock data - replace with real on-chain queries
-const MOCK_TICKETS: Ticket[] = [
-  {
-    id: '0x8a1b2c3d4e5f6789',
-    title: 'Nova Festival 2025',
-    posterUrl: '',
-    dateISO: '2025-06-22T18:00:00Z',
-    venue: 'Zilker Park, Austin',
-    seat: { section: 'C', row: '14', seat: '7' },
-    status: 'owned',
-    policyObjectId: '0x4b3a2c1d0e9f8765',
-    purchaseTx: '0x7c8b9a0d1e2f3456',
-    royaltyPct: 0.10,
-    organizerPct: 0.08,
-    networkFeeAtBuy: 0.03,
-  },
-  {
-    id: '0x91c2d3e4f5a6b789',
-    title: 'Glasshouse Sessions',
-    posterUrl: '',
-    dateISO: '2025-07-08T20:00:00Z',
-    venue: 'The Chapel, SF',
-    seat: { section: 'A', row: '5', seat: '12' },
-    status: 'listed',
-    policyObjectId: '0x5c4b3a2d1e0f9876',
-    purchaseTx: '0x8d9c0a1b2e3f4567',
-    royaltyPct: 0.10,
-    organizerPct: 0.08,
-    networkFeeAtBuy: 0.03,
-    listing: {
-      priceSUI: 35.5,
-      createdAtISO: '2025-10-20T10:30:00Z',
-      kioskId: '0x6d5e4f3a2b1c0987',
-      listingId: '0x9e8f7a6b5c4d3210',
-    },
-  },
-  {
-    id: '0x7c2d3e4f5a6b1234',
-    title: 'Ambient Nights #13',
-    posterUrl: '',
-    dateISO: '2025-08-01T21:30:00Z',
-    venue: "Baby's All Right, Brooklyn",
-    seat: {},
-    status: 'used',
-    policyObjectId: '0x3a2b1c0d9e8f7654',
-    purchaseTx: '0x5d6e7f8a9b0c1234',
-    royaltyPct: 0.10,
-    organizerPct: 0.08,
-    networkFeeAtBuy: 0.03,
-  },
-];
-
-const SUGGESTED_EVENTS = [
-  { title: 'Summer Beats 2025', city: 'Los Angeles', price: 45 },
-  { title: 'Indie Rock Night', city: 'Portland', price: 28 },
-  { title: 'Electronic Dreams', city: 'Seattle', price: 38 },
-];
+import { DevWalletBadge } from '../components/DevWalletBadge';
+import { getOwnedTickets, type OwnedTicket } from '../lib/rpc';
+import { currentAddress } from '../lib/signer';
+import { explorerObj, shortenAddress } from '../lib/explorer';
+import { flags } from '../lib/env';
 
 export function MyTickets() {
-  const account = useCurrentAccount();
-  const [activeTab, setActiveTab] = useState<TabFilter>('upcoming');
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-  const [modalType, setModalType] = useState<'qr' | 'list' | 'transfer' | null>(null);
+  const [tickets, setTickets] = useState<OwnedTicket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>();
+  const address = currentAddress();
 
-  // Filter tickets based on tab
-  const filteredTickets = MOCK_TICKETS.filter((ticket) => {
-    const now = new Date();
-    const eventDate = new Date(ticket.dateISO);
+  useEffect(() => {
+    if (!address) {
+      setLoading(false);
+      return;
+    }
     
-    switch (activeTab) {
-      case 'upcoming':
-        return eventDate >= now && ticket.status !== 'used';
-      case 'listed':
-        return ticket.status === 'listed';
-      case 'past':
-        return eventDate < now || ticket.status === 'used';
-      default:
-        return true;
+    loadTickets();
+  }, [address]);
+
+  async function loadTickets() {
+    setLoading(true);
+    setError(undefined);
+    
+    try {
+      const ownedTickets = await getOwnedTickets(address);
+      setTickets(ownedTickets);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load tickets');
+    } finally {
+      setLoading(false);
     }
-  }).sort((a, b) => {
-    // Sort by date ascending for upcoming
-    if (activeTab === 'upcoming') {
-      return new Date(a.dateISO).getTime() - new Date(b.dateISO).getTime();
-    }
-    // Sort by date descending for past
-    return new Date(b.dateISO).getTime() - new Date(a.dateISO).getTime();
-  });
+  }
 
-  // Modal handlers
-  const handleViewQR = (ticket: Ticket) => {
-    setSelectedTicket(ticket);
-    setModalType('qr');
-  };
-
-  const handleList = (ticket: Ticket) => {
-    setSelectedTicket(ticket);
-    setModalType('list');
-  };
-
-  const handleCancelListing = async (ticket: Ticket) => {
-    console.log('Cancel listing:', ticket.id);
-    // TODO: Implement cancel listing logic
-  };
-
-  const handleTransfer = (ticket: Ticket) => {
-    setSelectedTicket(ticket);
-    setModalType('transfer');
-  };
-
-  const handleDetails = (ticket: Ticket) => {
-    console.log('Show details:', ticket.id);
-    // TODO: Implement details drawer
-  };
-
-  const handleListSubmit = async (ticketId: string, price: number) => {
-    console.log('List ticket:', ticketId, price);
-    // TODO: Implement listing logic
-  };
-
-  const handleTransferSubmit = async (ticketId: string, recipient: string) => {
-    console.log('Transfer ticket:', ticketId, recipient);
-    // TODO: Implement transfer logic
-  };
-
-  const closeModal = () => {
-    setModalType(null);
-    setSelectedTicket(null);
-  };
-
-  // Wallet disconnected state
-  if (!account) {
+  // No wallet
+  if (!address) {
     return (
       <main className="relative min-h-screen overflow-hidden bg-vignette noise">
         <div className="mx-auto flex min-h-[80vh] max-w-screen-xl items-center justify-center px-6">
@@ -171,10 +47,10 @@ export function MyTickets() {
               <TicketIcon className="h-8 w-8 text-[#4DA2FF]" />
             </div>
             <h2 className="mb-3 font-[Inter_Tight] text-2xl tracking-tight text-[#DCE7F0]">
-              Connect wallet to continue
+              No wallet connected
             </h2>
             <p className="text-[var(--muted)]">
-              Connect your Sui wallet to view your tickets and manage listings.
+              Refresh the page to generate a dev wallet and view your tickets.
             </p>
           </div>
         </div>
@@ -182,10 +58,53 @@ export function MyTickets() {
     );
   }
 
-  // Empty state
-  if (MOCK_TICKETS.length === 0) {
+  // Loading state
+  if (loading) {
     return (
-      <main className="min-h-screen py-12">
+      <main className="relative min-h-screen overflow-hidden bg-vignette noise py-12">
+        {flags.useEphemeralSigner && <DevWalletBadge />}
+        
+        <div className="mx-auto flex min-h-[60vh] max-w-screen-xl items-center justify-center px-6">
+          <div className="text-center">
+            <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-[#4DA2FF]" />
+            <p className="text-[var(--muted)]">Loading your tickets...</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <main className="relative min-h-screen overflow-hidden bg-vignette noise py-12">
+        {flags.useEphemeralSigner && <DevWalletBadge />}
+        
+        <div className="mx-auto flex min-h-[60vh] max-w-screen-xl items-center justify-center px-6">
+          <div className="card max-w-md text-center">
+            <div className="mb-4 text-red-500">⚠️</div>
+            <h2 className="mb-3 font-[Inter_Tight] text-xl text-[#DCE7F0]">
+              Failed to load tickets
+            </h2>
+            <p className="mb-4 text-sm text-[var(--muted)]">{error}</p>
+            <button
+              onClick={loadTickets}
+              className="rounded-xl bg-[#4DA2FF] px-6 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Empty state
+  if (tickets.length === 0) {
+    return (
+      <main className="relative min-h-screen overflow-hidden bg-vignette noise py-12">
+        {flags.useEphemeralSigner && <DevWalletBadge />}
+        
         <div className="mx-auto max-w-screen-xl px-6">
           <FadeRise>
             <div className="mb-12 text-center">
@@ -204,42 +123,15 @@ export function MyTickets() {
                 No tickets yet
               </h2>
               <p className="mb-8 text-[var(--muted)]">
-                Browse upcoming events and purchase your first ticket.
+                Go to the app console to mint and purchase your first ticket.
               </p>
               <a
                 href="/app"
                 className="inline-flex items-center gap-2 rounded-xl bg-[#4DA2FF] px-6 py-3 font-medium text-white transition-transform duration-200 ease-out hover:scale-[1.02]"
               >
                 <ShoppingBag className="h-5 w-5" />
-                Browse Events
+                Go to Console
               </a>
-            </div>
-          </FadeRise>
-
-          {/* Suggested events */}
-          <FadeRise delay={0.2}>
-            <div className="mt-12">
-              <h3 className="mb-6 text-center text-lg font-medium text-[#DCE7F0]">
-                Upcoming events you might like
-              </h3>
-              <div className="grid gap-4 md:grid-cols-3">
-                {SUGGESTED_EVENTS.map((event, i) => (
-                  <motion.a
-                    key={event.title}
-                    href="/app"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 + i * 0.1, duration: 0.28 }}
-                    className="card group overflow-hidden p-4 transition-transform duration-200 hover:scale-[1.01]"
-                  >
-                    <h4 className="font-medium text-[#DCE7F0]">{event.title}</h4>
-                    <p className="mt-1 text-sm text-[var(--muted)]">{event.city}</p>
-                    <p className="mt-2 tabular-nums text-sm text-[#4DA2FF]">
-                      From ${event.price}
-                    </p>
-                  </motion.a>
-                ))}
-              </div>
             </div>
           </FadeRise>
         </div>
@@ -249,7 +141,9 @@ export function MyTickets() {
 
   // Main view with tickets
   return (
-    <main className="min-h-screen py-12">
+    <main className="relative min-h-screen overflow-hidden bg-vignette noise py-12">
+      {flags.useEphemeralSigner && <DevWalletBadge />}
+      
       <div className="mx-auto max-w-screen-xl px-6">
         {/* Header */}
         <FadeRise>
@@ -259,88 +153,82 @@ export function MyTickets() {
                 My Tickets
               </h1>
               <p className="mt-2 text-[var(--muted)]">
-                {MOCK_TICKETS.length} {MOCK_TICKETS.length === 1 ? 'ticket' : 'tickets'}
+                {tickets.length} {tickets.length === 1 ? 'ticket' : 'tickets'} owned
               </p>
             </div>
+            <button
+              onClick={loadTickets}
+              className="rounded-xl border border-white/14 px-4 py-2 text-sm font-medium text-white/85 transition-colors hover:bg-white/5"
+            >
+              Refresh
+            </button>
           </div>
         </FadeRise>
 
-        {/* Tabs */}
-        <FadeRise delay={0.1}>
-          <div className="mb-8 flex gap-2 border-b border-white/10">
-            {(['upcoming', 'listed', 'past'] as TabFilter[]).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`relative px-4 py-3 text-sm font-medium transition-colors ${
-                  activeTab === tab
-                    ? 'text-[#DCE7F0]'
-                    : 'text-[var(--muted)] hover:text-[#DCE7F0]'
-                }`}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                {activeTab === tab && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#4DA2FF]"
-                    transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-              </button>
-            ))}
-          </div>
-        </FadeRise>
+        {/* Ticket list */}
+        <div className="space-y-4">
+          {tickets.map((ticket, i) => (
+            <motion.div
+              key={ticket.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 + i * 0.05, duration: 0.28 }}
+            >
+              <div className="card">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="mb-2 flex items-center gap-3">
+                      <h3 className="font-mono text-sm text-[#DCE7F0]">
+                        Ticket #{ticket.serialNumber}
+                      </h3>
+                      {ticket.used ? (
+                        <span className="rounded-full bg-gray-500/20 px-3 py-1 text-xs text-gray-400">
+                          ✓ Used
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-green-500/20 px-3 py-1 text-xs text-green-400">
+                          ● Active
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-1 text-sm">
+                      <div className="flex items-center gap-2 text-[var(--muted)]">
+                        <span className="text-xs">ID:</span>
+                        <span className="font-mono text-xs">{shortenAddress(ticket.id, 8)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[var(--muted)]">
+                        <span className="text-xs">Class:</span>
+                        <span className="font-mono text-xs">{shortenAddress(ticket.classId, 8)}</span>
+                      </div>
+                    </div>
+                  </div>
 
-        {/* Ticket grid */}
-        {filteredTickets.length === 0 ? (
-          <FadeRise delay={0.2}>
-            <div className="card text-center">
-              <p className="text-[var(--muted)]">
-                No {activeTab} tickets found.
-              </p>
-            </div>
-          </FadeRise>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {filteredTickets.map((ticket, i) => (
-              <motion.div
-                key={ticket.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 + i * 0.08, duration: 0.28 }}
-              >
-                <TicketCard
-                  ticket={ticket}
-                  onViewQR={handleViewQR}
-                  onList={handleList}
-                  onCancelListing={handleCancelListing}
-                  onTransfer={handleTransfer}
-                  onDetails={handleDetails}
-                />
-              </motion.div>
-            ))}
-          </div>
-        )}
+                  <div className="flex gap-2">
+                    <a
+                      href={explorerObj(ticket.id)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-xl border border-white/14 px-3 py-2 text-sm font-medium text-white/85 transition-colors hover:bg-white/5"
+                    >
+                      View <ExternalLink className="h-3 w-3" />
+                    </a>
+                    
+                    {!ticket.used && (
+                      <a
+                        href={`/checkin?ticket=${ticket.id}`}
+                        className="rounded-xl bg-[#4DA2FF] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+                      >
+                        Check In
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
-
-      {/* Modals */}
-      {modalType === 'qr' && selectedTicket && (
-        <QRDrawer ticket={selectedTicket} onClose={closeModal} />
-      )}
-      {modalType === 'list' && selectedTicket && (
-        <ListModal
-          ticket={selectedTicket}
-          onClose={closeModal}
-          onList={handleListSubmit}
-        />
-      )}
-      {modalType === 'transfer' && selectedTicket && (
-        <TransferModal
-          ticket={selectedTicket}
-          onClose={closeModal}
-          onTransfer={handleTransferSubmit}
-        />
-      )}
     </main>
   );
 }

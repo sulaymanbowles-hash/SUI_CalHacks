@@ -1,3 +1,4 @@
+"use client";
 import { motion } from "framer-motion";
 import { ReactNode } from "react";
 
@@ -38,15 +39,7 @@ export function Stagger({ children, delay = 0 }: StaggerProps) {
       initial="hidden"
       whileInView="show"
       viewport={{ once: true, margin: "-10% 0px" }}
-      variants={{
-        hidden: {},
-        show: {
-          transition: {
-            staggerChildren: 0.06,
-            delayChildren: delay,
-          },
-        },
-      }}
+      transition={{ staggerChildren: 0.06, delayChildren: delay }}
     >
       {children}
     </motion.div>

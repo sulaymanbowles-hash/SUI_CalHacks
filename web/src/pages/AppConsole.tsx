@@ -1,32 +1,35 @@
 import { useState } from 'react';
-import { useCurrentAccount } from '@mysten/dapp-kit';
 import { CreditCard, ArrowRight, AlertCircle, Sparkles, ExternalLink } from 'lucide-react';
 import { Button } from '../components/Button';
 import { TxStatus } from '../components/TxStatus';
-import { mintAndList, buyAndApprove, type MintAndListParams } from '../lib/ptb';
-import { PACKAGE_ID, POLICY_ID } from '../lib/env';
+import { DevWalletBadge } from '../components/DevWalletBadge';
+import { PosterUpload } from '../components/PosterUpload';
+import { mintAndList, buyAndApprove } from '../lib/ptb';
+import { PACKAGE_ID, POLICY_ID, flags } from '../lib/env';
 
 const isDev = import.meta.env.DEV;
 
 export function AppConsole() {
-  const account = useCurrentAccount();
-  const [recentTickets, setRecentTickets] = useState<string[]>([]);
+  const [recentMints, setRecentMints] = useState<Array<{ kioskId: string; ticketId: string; priceSui: number }>>([]);
 
   // Mint & List state
   const [mintForm, setMintForm] = useState({
     eventName: 'Rock Concert 2025',
-    startsAt: Math.floor(Date.now() / 1000) + 86400,
-    endsAt: Math.floor(Date.now() / 1000) + 90000,
-    posterCid: 'walrus://QmTestCID123',
-    facePriceMist: '250000000',
-    supply: '100',
+    priceSui: 0.25,
+    supply: 100,
+    posterCid: '',
   });
   const [mintStatus, setMintStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
   const [mintDigest, setMintDigest] = useState<string>();
+  const [mintIds, setMintIds] = useState<{ ticketId?: string; kioskId?: string; listingId?: string }>();
   const [mintError, setMintError] = useState<string>();
 
   // Buy & Approve state
-  const [buyTicketId, setBuyTicketId] = useState('');
+  const [buyForm, setBuyForm] = useState({
+    kioskId: '',
+    ticketId: '',
+    priceSui: 0.25,
+  });
   const [buyStatus, setBuyStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
   const [buyDigest, setBuyDigest] = useState<string>();
   const [buyError, setBuyError] = useState<string>();
@@ -37,13 +40,28 @@ export function AppConsole() {
     setMintError(undefined);
 
     try {
-      const result = await mintAndList(mintForm as MintAndListParams);
+      const result = await mintAndList(mintForm);
       setMintStatus('success');
       setMintDigest(result.digest);
-      if (result.ticketId) {
-        setBuyTicketId(result.ticketId);
-        setRecentTickets((prev) => [result.ticketId!, ...prev.slice(0, 2)]);
-      }
+      setMintIds({
+        ticketId: result.ticketId,
+        kioskId: result.kioskId,
+        listingId: result.listingId,
+      });
+      
+      // Save for easy buy-approve
+      setRecentMints(prev => [{
+        kioskId: result.kioskId,
+        ticketId: result.ticketId,
+        priceSui: mintForm.priceSui,
+      }, ...prev.slice(0, 2)]);
+      
+      // Auto-fill buy form
+      setBuyForm({
+        kioskId: result.kioskId,
+        ticketId: result.ticketId,
+        priceSui: mintForm.priceSui,
+      });
     } catch (error: any) {
       setMintStatus('error');
       setMintError(error.message || String(error));
@@ -51,8 +69,8 @@ export function AppConsole() {
   };
 
   const handleBuyAndApprove = async () => {
-    if (!buyTicketId) {
-      setBuyError('Ticket ID required');
+    if (!buyForm.ticketId || !buyForm.kioskId) {
+      setBuyError('Kiosk ID and Ticket ID required');
       return;
     }
 
@@ -60,7 +78,7 @@ export function AppConsole() {
     setBuyError(undefined);
 
     try {
-      const result = await buyAndApprove({ ticketId: buyTicketId });
+      const result = await buyAndApprove(buyForm);
       setBuyStatus('success');
       setBuyDigest(result.digest);
     } catch (error: any) {
@@ -69,28 +87,19 @@ export function AppConsole() {
     }
   };
 
-  if (!account) {
-    return (
-      <main className="relative min-h-screen overflow-hidden bg-vignette noise">
-        <div className="mx-auto flex min-h-[80vh] max-w-screen-xl items-center justify-center px-6">
-          <div className="card max-w-md text-center">
-            <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-[#4DA2FF]/10">
-              <Sparkles className="h-8 w-8 text-[#4DA2FF]" />
-            </div>
-            <h2 className="mb-3 font-[Inter_Tight] text-2xl tracking-tight text-[#DCE7F0]">
-              Connect wallet to continue
-            </h2>
-            <p className="text-[var(--muted)]">
-              Connect your Sui wallet to access the demo console and test ticket creation.
-            </p>
-          </div>
-        </div>
-      </main>
-    );
-  }
+  const loadRecentMint = (mint: typeof recentMints[0]) => {
+    setBuyForm({
+      kioskId: mint.kioskId,
+      ticketId: mint.ticketId,
+      priceSui: mint.priceSui,
+    });
+  };
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-vignette noise py-20">
+      {/* Dev Wallet Badge */}
+      {flags.useEphemeralSigner && <DevWalletBadge />}
+      
       <div className="mx-auto max-w-screen-xl px-6">
         {/* Header */}
         <div className="mb-8 text-center">
@@ -142,13 +151,16 @@ export function AppConsole() {
               >
                 Get test SUI
               </a>
-              <button
-                disabled
-                className="relative cursor-not-allowed rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-white/40 opacity-60"
-              >
-                <CreditCard className="mr-2 inline h-4 w-4" />
-                Buy with Card
-              </button>
+              {flags.showFiatOnramp && (
+                <button
+                  disabled
+                  className="relative cursor-not-allowed rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-white/40 opacity-60"
+                  title="Card payments available on mainnet only"
+                >
+                  <CreditCard className="mr-2 inline h-4 w-4" />
+                  Buy with Card
+                </button>
+              )}
             </div>
           </div>
           <p className="mt-3 text-xs text-white/50">
@@ -161,11 +173,11 @@ export function AppConsole() {
           <div className="card">
             <header className="mb-6 flex items-start justify-between">
               <div>
-                <h3 className="text-xl font-medium text-[#DCE7F0]">Create Ticket</h3>
-                <p className="mt-1 text-sm text-[var(--muted)]">Mint a new ticket for your event.</p>
+                <h3 className="text-xl font-medium text-[#DCE7F0]">Mint & List</h3>
+                <p className="mt-1 text-sm text-[var(--muted)]">Create event, mint ticket, list in Kiosk</p>
               </div>
               <span className="rounded-full bg-white/[0.06] px-2.5 py-1 text-xs text-white/80">
-                Organizer tools
+                Step 1
               </span>
             </header>
 
@@ -179,7 +191,7 @@ export function AppConsole() {
                   value={mintForm.eventName}
                   onChange={(e) => setMintForm({ ...mintForm, eventName: e.target.value })}
                   className="w-full rounded-xl border border-white/12 bg-white/[0.02] px-4 py-3 text-[#DCE7F0] transition-colors focus:border-[#4DA2FF] focus:outline-none"
-                  placeholder="Enter event name..."
+                  placeholder="Rock Concert 2025"
                   required
                 />
               </div>
@@ -189,18 +201,15 @@ export function AppConsole() {
                   <label className="mb-2 block text-sm font-medium text-[var(--muted)]">
                     Price (SUI)
                   </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/50">SUI</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={Number(mintForm.facePriceMist) / 1e9}
-                      onChange={(e) => setMintForm({ ...mintForm, facePriceMist: String(Number(e.target.value) * 1e9) })}
-                      className="w-full rounded-xl border border-white/12 bg-white/[0.02] py-3 pl-12 pr-4 tabular-nums text-[#DCE7F0] transition-colors focus:border-[#4DA2FF] focus:outline-none"
-                      placeholder="0.25"
-                      required
-                    />
-                  </div>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={mintForm.priceSui}
+                    onChange={(e) => setMintForm({ ...mintForm, priceSui: Number(e.target.value) })}
+                    className="w-full rounded-xl border border-white/12 bg-white/[0.02] px-4 py-3 tabular-nums text-[#DCE7F0] transition-colors focus:border-[#4DA2FF] focus:outline-none"
+                    placeholder="0.25"
+                    required
+                  />
                 </div>
 
                 <div>
@@ -210,7 +219,7 @@ export function AppConsole() {
                   <input
                     type="number"
                     value={mintForm.supply}
-                    onChange={(e) => setMintForm({ ...mintForm, supply: e.target.value })}
+                    onChange={(e) => setMintForm({ ...mintForm, supply: Number(e.target.value) })}
                     className="w-full rounded-xl border border-white/12 bg-white/[0.02] px-4 py-3 tabular-nums text-[#DCE7F0] transition-colors focus:border-[#4DA2FF] focus:outline-none"
                     placeholder="100"
                     required
@@ -225,9 +234,19 @@ export function AppConsole() {
                 disabled={mintStatus === 'pending' || !PACKAGE_ID}
                 className="w-full"
               >
-                {mintStatus === 'pending' ? 'Creating Ticket...' : 'Create Ticket'}
+                {mintStatus === 'pending' ? 'Minting & Listing...' : 'Mint & List Ticket'}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
+
+              {mintStatus === 'success' && mintIds && (
+                <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4 text-sm">
+                  <div className="mb-2 font-bold text-green-400">✓ Success!</div>
+                  <div className="space-y-1 font-mono text-xs text-green-300">
+                    <div>Ticket: {mintIds.ticketId?.slice(0, 20)}...</div>
+                    <div>Kiosk: {mintIds.kioskId?.slice(0, 20)}...</div>
+                  </div>
+                </div>
+              )}
 
               <TxStatus status={mintStatus} digest={mintDigest} error={mintError} />
             </form>
@@ -235,50 +254,72 @@ export function AppConsole() {
 
           {/* Buy Ticket Card */}
           <div className="card">
-            <header className="mb-6">
-              <h3 className="text-xl font-medium text-[#DCE7F0]">Buy Ticket</h3>
-              <p className="mt-1 text-sm text-[var(--muted)]">Purchase with automatic royalties.</p>
+            <header className="mb-6 flex items-start justify-between">
+              <div>
+                <h3 className="text-xl font-medium text-[#DCE7F0]">Buy & Approve</h3>
+                <p className="mt-1 text-sm text-[var(--muted)]">Purchase with automatic royalties</p>
+              </div>
+              <span className="rounded-full bg-white/[0.06] px-2.5 py-1 text-xs text-white/80">
+                Step 2
+              </span>
             </header>
 
             <form onSubmit={(e) => { e.preventDefault(); handleBuyAndApprove(); }} className="space-y-4">
               <div>
                 <label className="mb-2 block text-sm font-medium text-[var(--muted)]">
+                  Kiosk ID
+                </label>
+                <input
+                  type="text"
+                  value={buyForm.kioskId}
+                  onChange={(e) => setBuyForm({ ...buyForm, kioskId: e.target.value })}
+                  placeholder="Auto-filled from mint or paste..."
+                  className="w-full rounded-xl border border-white/12 bg-white/[0.02] px-4 py-3 font-mono text-sm text-[#DCE7F0] transition-colors focus:border-[#4DA2FF] focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[var(--muted)]">
                   Ticket ID
                 </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={buyTicketId}
-                    onChange={(e) => setBuyTicketId(e.target.value)}
-                    placeholder="Paste ticket ID or pick one you minted above..."
-                    className="grow rounded-xl border border-white/12 bg-white/[0.02] px-4 py-3 font-mono text-sm text-[#DCE7F0] transition-colors focus:border-[#4DA2FF] focus:outline-none"
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="rounded-xl border border-white/14 px-4 py-3 text-sm font-medium text-white/85 transition-colors hover:bg-white/5"
-                    disabled={recentTickets.length === 0}
-                  >
-                    Pick
-                  </button>
-                </div>
-                {recentTickets.length > 0 && (
-                  <p className="mt-2 text-xs text-white/60">
-                    Recent:{' '}
-                    {recentTickets.map((id, i) => (
-                      <span key={id}>
-                        <button
-                          type="button"
-                          onClick={() => setBuyTicketId(id)}
-                          className="text-[#4DA2FF] hover:underline"
-                        >
-                          {id.slice(0, 6)}...{id.slice(-4)}
-                        </button>
-                        {i < recentTickets.length - 1 && ' • '}
-                      </span>
+                <input
+                  type="text"
+                  value={buyForm.ticketId}
+                  onChange={(e) => setBuyForm({ ...buyForm, ticketId: e.target.value })}
+                  placeholder="Auto-filled from mint or paste..."
+                  className="w-full rounded-xl border border-white/12 bg-white/[0.02] px-4 py-3 font-mono text-sm text-[#DCE7F0] transition-colors focus:border-[#4DA2FF] focus:outline-none"
+                  required
+                />
+                {recentMints.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {recentMints.map((mint, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => loadRecentMint(mint)}
+                        className="rounded-lg border border-white/12 px-3 py-1 text-xs text-[#4DA2FF] transition-colors hover:bg-white/5"
+                      >
+                        Load recent #{i + 1}
+                      </button>
                     ))}
-                  </p>
+                  </div>
                 )}
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[var(--muted)]">
+                  Price (SUI)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={buyForm.priceSui}
+                  onChange={(e) => setBuyForm({ ...buyForm, priceSui: Number(e.target.value) })}
+                  className="w-full rounded-xl border border-white/12 bg-white/[0.02] px-4 py-3 tabular-nums text-[#DCE7F0] transition-colors focus:border-[#4DA2FF] focus:outline-none"
+                  placeholder="0.25"
+                  required
+                />
               </div>
 
               {/* Royalty Split Preview */}
@@ -301,21 +342,16 @@ export function AppConsole() {
                     <span className="tabular-nums font-bold text-[#DCE7F0]">2%</span>
                   </div>
                 </div>
-                <div className="mt-3 border-t border-white/10 pt-3">
-                  <p className="text-xs text-white/50">
-                    Enforced by transfer policies. Royalties settle in ~480ms on testnet.
-                  </p>
-                </div>
               </div>
 
               <Button
                 type="submit"
                 variant="secondary"
                 loading={buyStatus === 'pending'}
-                disabled={buyStatus === 'pending' || !buyTicketId || !POLICY_ID}
+                disabled={buyStatus === 'pending' || !buyForm.ticketId || !buyForm.kioskId || !POLICY_ID}
                 className="w-full"
               >
-                {buyStatus === 'pending' ? 'Processing...' : 'Buy Ticket'}
+                {buyStatus === 'pending' ? 'Purchasing...' : 'Buy & Approve'}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
 
@@ -327,16 +363,16 @@ export function AppConsole() {
         {/* Policy Objects Table */}
         {(PACKAGE_ID || POLICY_ID) && (
           <div className="card">
-            <h3 className="mb-4 text-xl font-medium text-[#DCE7F0]">Policy Objects</h3>
+            <h3 className="mb-4 text-xl font-medium text-[#DCE7F0]">Deployed Contracts</h3>
             <div className="space-y-3">
               {PACKAGE_ID && (
                 <div className="flex items-center justify-between rounded-lg border border-white/12 p-3">
                   <div>
                     <div className="text-xs text-white/60">Package ID</div>
-                    <div className="font-mono text-sm text-[#DCE7F0]">{PACKAGE_ID.slice(0, 20)}...</div>
+                    <div className="font-mono text-sm text-[#DCE7F0]">{PACKAGE_ID.slice(0, 30)}...</div>
                   </div>
                   <a
-                    href={`https://suiscan.xyz/testnet/object/${PACKAGE_ID}`}
+                    href={`https://suiscan.xyz/testnet/object/${PACKAGE_ID}?network=testnet`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-sm text-[#4DA2FF] hover:underline"
@@ -348,11 +384,11 @@ export function AppConsole() {
               {POLICY_ID && (
                 <div className="flex items-center justify-between rounded-lg border border-white/12 p-3">
                   <div>
-                    <div className="text-xs text-white/60">Transfer Policy</div>
-                    <div className="font-mono text-sm text-[#DCE7F0]">{POLICY_ID.slice(0, 20)}...</div>
+                    <div className="text-xs text-white/60">Transfer Policy (Shared)</div>
+                    <div className="font-mono text-sm text-[#DCE7F0]">{POLICY_ID.slice(0, 30)}...</div>
                   </div>
                   <a
-                    href={`https://suiscan.xyz/testnet/object/${POLICY_ID}`}
+                    href={`https://suiscan.xyz/testnet/object/${POLICY_ID}?network=testnet`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-sm text-[#4DA2FF] hover:underline"

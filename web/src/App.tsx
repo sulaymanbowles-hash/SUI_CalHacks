@@ -8,6 +8,7 @@ import { Landing } from './pages/Landing';
 import { BuyerApp } from './pages/BuyerApp';
 import { AppConsole } from './pages/AppConsole';
 import { MyTickets } from './pages/MyTickets';
+import { CheckIn } from './pages/CheckIn';
 
 // Configure Sui network
 const { networkConfig } = createNetworkConfig({
@@ -29,9 +30,12 @@ function App() {
               <Header />
               <Routes>
                 <Route path="/" element={<Landing />} />
-                <Route path="/app" element={<BuyerApp />} />
+                <Route path="/app" element={<AppConsole />} />
                 <Route path="/console" element={<AppConsole />} />
                 <Route path="/tickets" element={<MyTickets />} />
+                <Route path="/my-tickets" element={<MyTickets />} />
+                <Route path="/checkin" element={<CheckIn />} />
+                <Route path="/buy" element={<BuyerApp />} />
               </Routes>
             </div>
           </BrowserRouter>
@@ -42,3 +46,4 @@ function App() {
 }
 
 export default App;
+t
