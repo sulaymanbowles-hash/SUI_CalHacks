@@ -2,275 +2,302 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  /* Design tokens */
-  :root {
-    --surface-1: rgba(255, 255, 255, 0.02);
-    --surface-2: rgba(255, 255, 255, 0.04);
-    --border-1: rgba(255, 255, 255, 0.12);
-    --shadow-card: 0 8px 24px rgba(3, 15, 28, 0.12);
-    --radius: 14px;
-    --ink: #DCE7F0;
-    --muted: rgba(220, 231, 240, 0.72);
-    --brand: #4DA2FF;
-    --canvas: #071521;
-  }
+/* ============================================================================
+   Design System: Refined Palette + Typography
+   ============================================================================ */
 
-  body {
-    @apply bg-[#071521] text-[#DCE7F0] antialiased;
-    font-feature-settings: 'tnum'; /* tabular numerals by default */
-    font-size: 16px;
-  }
-
-  /* Focus states for accessibility - visible high-contrast rings */
-  *:focus-visible {
-    @apply outline-none ring-2 ring-[#4DA2FF] ring-offset-2 ring-offset-[#071521];
-    outline-offset: 2px;
-  }
-
-  /* Ensure proper heading hierarchy with Inter Tight */
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Inter Tight', system-ui, -apple-system, sans-serif;
-    font-weight: 700;
-    letter-spacing: -0.3px;
-    line-height: 1.15;
-    color: #DCE7F0;
-  }
-
-  h1 {
-    letter-spacing: -0.03em;
-    max-width: 16ch;
-  }
-
-  /* Body text */
-  p {
-    line-height: 1.5;
-    max-width: 65ch;
-  }
-
-  /* Respect prefers-reduced-motion */
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
-    }
-  }
+:root {
+  /* Canvas & Surfaces */
+  --canvas: #061522;
+  --surface-1: rgba(255, 255, 255, 0.02);
+  --surface-2: rgba(255, 255, 255, 0.04);
+  --border: rgba(255, 255, 255, 0.12);
+  
+  /* Text */
+  --ink: #E6F0F7;
+  --muted: rgba(230, 240, 247, 0.74);
+  
+  /* Brand & Accents */
+  --brand: #4DA2FF;
+  --brand-2: #11C7C5;
+  --success: #2ED67A;
+  --warning: #FFB020;
+  --danger: #FF5C6C;
+  
+  /* System */
+  --radius: 14px;
+  --shadow: 0 8px 24px rgba(3, 15, 28, 0.12);
+  
+  /* Spacing Rhythm */
+  --section-spacing: 88px;
+  --card-padding: 24px;
+  --grid-gap: 24px;
 }
 
-@layer components {
-  /* Single card recipe used site-wide */
-  .card {
-    border: 1px solid var(--border-1);
-    background: linear-gradient(0deg, var(--surface-1), var(--surface-1)),
-                radial-gradient(120% 80% at 0% 100%, rgba(77, 162, 255, 0.08), transparent 60%);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-card);
-    padding: 24px;
-  }
+/* ============================================================================
+   Base Styles
+   ============================================================================ */
 
-  /* Solid chips for metrics - no nested borders */
-  .chip {
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-    padding: 12px;
-  }
-
-  /* Button base styles with ripple support */
-  .btn {
-    position: relative;
-    overflow: hidden;
-    border-radius: 12px;
-    font-weight: 500;
-    transition: transform 200ms ease-out;
-  }
-
-  .btn-primary {
-    background: #4DA2FF;
-    color: #fff;
-  }
-
-  .btn-outline {
-    border: 1px solid var(--border-1);
-    color: #E6F0F7;
-  }
-
-  /* Ripple effect for buttons */
-  .btn .ripple,
-  .ripple {
-    position: absolute;
-    border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.25);
-    transform: scale(0);
-    animation: ripple 0.52s ease-out forwards;
-    pointer-events: none;
-  }
-
-  @keyframes ripple {
-    to {
-      transform: scale(1);
-      opacity: 0;
-    }
-  }
-
-  /* QR TTL pulse */
-  .pulse {
-    animation: pulse 1s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% {
-      opacity: 0.9;
-    }
-    50% {
-      opacity: 0.6;
-    }
-  }
-
-  /* Performance optimization: content-visibility for large sections */
-  .section {
-    content-visibility: auto;
-    contain-intrinsic-size: 800px;
-  }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-@layer utilities {
-  /* Sui-themed glass effect */
-  .glass {
-    @apply backdrop-blur-xl;
-    background: linear-gradient(135deg, 
-      rgba(15, 20, 25, 0.6) 0%, 
-      rgba(15, 20, 25, 0.4) 100%
-    );
-    border: 1px solid rgba(77, 168, 255, 0.1);
-  }
-
-  /* Sui gradient border */
-  .gradient-border {
-    position: relative;
-    background: linear-gradient(135deg, 
-      rgba(77, 168, 255, 0.03) 0%, 
-      rgba(0, 212, 255, 0.03) 100%
-    );
-  }
-
-  .gradient-border::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(135deg, 
-      rgba(77, 168, 255, 0.4) 0%, 
-      rgba(0, 212, 255, 0.4) 50%,
-      rgba(157, 108, 255, 0.3) 100%
-    );
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-  }
-
-  /* Sui glow effect */
-  .sui-glow {
-    box-shadow: 0 0 40px rgba(77, 168, 255, 0.2),
-                0 0 80px rgba(0, 212, 255, 0.1);
-  }
-
-  /* Text gradient */
-  .text-gradient-sui {
-    background: linear-gradient(135deg, #4DA8FF 0%, #00D4FF 50%, #00E5CC 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  /* Radial gradient utility for backgrounds */
-  .bg-gradient-radial {
-    background: radial-gradient(circle, var(--tw-gradient-stops));
-  }
-
-  /* Edge vignette background - static for performance */
-  .bg-vignette {
-    background: 
-      radial-gradient(1200px 600px at 80% -10%, rgba(77, 162, 255, 0.14), transparent 60%),
-      radial-gradient(900px 500px at 0% 100%, rgba(192, 230, 255, 0.08), transparent 60%);
-  }
-
-  /* Noise texture overlay */
-  .noise::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    opacity: 0.03;
-  }
-
-  .noise > * {
-    position: relative;
-    z-index: 2;
-  }
-
-  /* Tabular numerals for fees and prices */
-  .tabular-nums {
-    font-feature-settings: 'tnum';
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Animation delay utility */
-  .animate-delay-1000 {
-    animation-delay: 1s;
-  }
-
-  /* Prose max width */
-  .prose {
-    max-width: 65ch;
-  }
-
-  /* Will-change for transform animations only */
-  .will-change-transform {
-    will-change: transform;
-  }
-
-  /* Hover states - only animate transform, not shadow */
-  .hover-lift {
-    transition: transform 200ms ease-out;
-  }
-
-  .hover-lift:hover {
-    transform: translateY(-2px);
-  }
+body {
+  color: var(--ink);
+  background: var(--canvas);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
-/* Consistent type system */
-h1, h2, h3 {
-  font-feature-settings: 'tnum', 'ss01';
+/* Canvas gradient wash (subtle) */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(circle at top right, rgba(77, 162, 255, 0.16), transparent 60%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+body::after {
+  content: '';
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 50%;
+  height: 50%;
+  background: radial-gradient(circle at bottom left, rgba(17, 199, 197, 0.08), transparent 60%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-::-webkit-scrollbar-track {
-  background: #030F1C;
+/* Monochrome noise texture on dark sections */
+.noise-texture,
+.noise {
+  position: relative;
 }
 
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+.noise-texture::before,
+.noise::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  z-index: 1;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
+/* Vignette for hero sections */
+.bg-vignette {
+  position: relative;
 }
 
-/* Respect prefers-reduced-motion */
+.bg-vignette::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 0%, rgba(6, 21, 34, 0.4) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Ensure content sits above gradients */
+.bg-vignette > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* ============================================================================
+   Typography Scale
+   ============================================================================ */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter Tight', 'Inter', sans-serif;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  font-weight: 600;
+}
+
+h1 {
+  font-size: 44px;
+  letter-spacing: -0.05em;
+}
+
+h2 {
+  font-size: 32px;
+  letter-spacing: -0.04em;
+}
+
+h3 {
+  font-size: 24px;
+  letter-spacing: -0.03em;
+}
+
+/* Tabular numerals for prices, metrics, seats */
+.tabular,
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* All-caps labels */
+.caps {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 12px;
+}
+
+/* Max line lengths for readability */
+.prose-tight {
+  max-width: 16ch;
+}
+
+.prose {
+  max-width: 65ch;
+}
+
+/* ============================================================================
+   Component Styles
+   ============================================================================ */
+
+/* Cards */
+.card {
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: var(--card-padding);
+  transition: transform 200ms ease-out, box-shadow 200ms ease-out;
+}
+
+/* Hover lift effect */
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(3, 15, 28, 0.16);
+}
+
+/* Chips */
+.chip {
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink);
+  padding: 0.35rem 0.75rem;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  white-space: nowrap;
+}
+
+.chip-outline {
+  border: 1px solid var(--border);
+  background: transparent;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  border-radius: 12px;
+  padding: 0.625rem 1.25rem;
+  transition: all 150ms ease-out;
+  cursor: pointer;
+  border: none;
+  font-size: 15px;
+  min-height: 44px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary {
+  background: var(--brand);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #5DADFF;
+  transform: scale(1.01);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-outline {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--ink);
+}
+
+.btn-outline:hover {
+  background: var(--surface-1);
+}
+
+.btn-ghost {
+  background: var(--surface-2);
+  color: var(--ink);
+  border: none;
+}
+
+.btn-ghost:hover {
+  background: var(--surface-1);
+}
+
+/* Section spacing */
+.section {
+  padding-top: var(--section-spacing);
+  padding-bottom: var(--section-spacing);
+}
+
+/* ============================================================================
+   Poster image with subtle inner stroke
+   ============================================================================ */
+
+.poster-img {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+}
+
+.poster-img::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* ============================================================================
+   Focus states for accessibility
+   ============================================================================ */
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   Reduced motion
+   ============================================================================ */
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -282,16 +309,129 @@ h1, h2, h3 {
   }
 }
 
-/* Float animation for orbs */
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0) translateX(0);
-  }
-  50% {
-    transform: translateY(-20px) translateX(10px);
-  }
+/* ============================================================================
+   Scroll progress bar
+   ============================================================================ */
+
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--brand);
+  transform-origin: 0%;
+  z-index: 100;
 }
 
-.animate-float {
-  animation: float 20s ease-in-out infinite;
+/* ============================================================================
+   Utility: content-visibility for performance
+   ============================================================================ */
+
+.lazy-render {
+  content-visibility: auto;
+  contain-intrinsic-size: 800px;
+}
+
+/* ============================================================================
+   Hash display (monospace for addresses/IDs)
+   ============================================================================ */
+
+.hash,
+.mono {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 13px;
+  letter-spacing: -0.01em;
+}
+
+/* ============================================================================
+   Custom utilities
+   ============================================================================ */
+
+/* Contrast-safe text */
+.text-safe {
+  color: var(--ink);
+  /* Ensures ≥4.5:1 on darkest panels */
+}
+
+.text-muted-safe {
+  color: var(--muted);
+  /* Bump opacity if contrast falls below AA */
+}
+
+/* External link icon spacing */
+.external-link::after {
+  content: '↗';
+  display: inline-block;
+  margin-left: 0.25em;
+  font-size: 0.85em;
+  opacity: 0.6;
+}
+
+/* Step chips in console */
+.step-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.step-chip.active {
+  background: rgba(77, 162, 255, 0.12);
+  color: var(--brand);
+}
+
+/* Transaction status dots */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.idle {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.status-dot.pending {
+  background: var(--warning);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.status-dot.success {
+  background: var(--success);
+}
+
+.status-dot.error {
+  background: var(--danger);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Tooltip */
+.tooltip {
+  position: relative;
+}
+
+.tooltip:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  padding: 0.375rem 0.625rem;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  font-size: 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1000;
 }

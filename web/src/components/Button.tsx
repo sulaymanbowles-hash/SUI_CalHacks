@@ -4,8 +4,9 @@ import { Loader2 } from 'lucide-react';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
-  variant?: 'primary' | 'secondary' | 'ghost';
+  variant?: 'primary' | 'outline' | 'ghost';
   loading?: boolean;
+  size?: 'md' | 'lg';
 }
 
 export function Button({
@@ -13,32 +14,33 @@ export function Button({
   variant = 'primary',
   loading = false,
   disabled,
+  size = 'md',
   className = '',
   ...props
 }: ButtonProps) {
-  const baseStyles = 'px-6 py-3 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative overflow-hidden';
+  const baseStyles = 'rounded-xl font-medium transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 focus:ring-offset-canvas';
+  
+  const sizeStyles = {
+    md: 'px-5 py-2.5 text-[15px] min-h-[40px]',
+    lg: 'px-7 py-3.5 text-base min-h-[48px]',
+  };
   
   const variants = {
-    primary: 'bg-gradient-sui text-white shadow-lg hover:shadow-xl hover:shadow-sui-blue/20 hover:scale-[1.02]',
-    secondary: 'bg-orchid-500 hover:bg-orchid-400 text-white shadow-lg hover:shadow-xl hover:shadow-orchid-500/20 hover:scale-[1.02]',
-    ghost: 'bg-transparent hover:bg-sui-blue/10 text-text-100 border-2 border-sui-blue/30 hover:border-sui-blue/50',
+    primary: 'bg-brand text-white hover:bg-[#5DADFF] active:scale-[0.98]',
+    outline: 'border border-border bg-transparent text-ink hover:bg-surface-1 active:scale-[0.98]',
+    ghost: 'bg-surface-2 text-ink hover:bg-surface-1 active:scale-[0.98]',
   };
 
   return (
     <motion.button
-      whileHover={!disabled && !loading ? { scale: 1.02 } : {}}
-      whileTap={!disabled && !loading ? { scale: 0.98 } : {}}
+      whileHover={!disabled && !loading ? { y: -1 } : {}}
+      whileTap={!disabled && !loading ? { y: 0 } : {}}
       disabled={disabled || loading}
-      className={`${baseStyles} ${variants[variant]} ${className}`}
+      className={`${baseStyles} ${sizeStyles[size]} ${variants[variant]} ${className}`}
       {...props}
     >
-      {variant === 'primary' && (
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-      )}
-      <span className="relative z-10 flex items-center gap-2">
-        {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-        {children}
-      </span>
+      {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+      {children}
     </motion.button>
   );
 }

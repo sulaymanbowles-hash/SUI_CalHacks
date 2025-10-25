@@ -2,7 +2,7 @@
  * zkLogin Button - Login with Google (OAuth wallet)
  */
 import { useState } from 'react';
-import { LogIn, LogOut, Loader2 } from 'lucide-react';
+import { LogOut, Loader2 } from 'lucide-react';
 import {
   getZkLoginSession,
   clearZkLoginSession,
@@ -42,14 +42,13 @@ export function ZkLoginButton() {
     
     return (
       <div className="flex items-center gap-2">
-        <div className="hidden items-center gap-2 rounded-xl border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm md:flex">
-          <div className="h-2 w-2 rounded-full bg-green-400" />
-          <span className="font-mono text-green-400">{shortAddress}</span>
+        <div className="hidden items-center gap-2 rounded-full border border-success/30 bg-success/10 px-3 py-1.5 text-xs md:flex">
+          <div className="h-2 w-2 rounded-full bg-success" />
+          <span className="monospace text-success">{shortAddress}</span>
         </div>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 rounded-xl border border-white/14 bg-white/[0.04] px-3 py-2 text-sm text-white/90 transition-colors hover:bg-white/[0.06] focus:outline-none focus:ring-2 focus:ring-[#4DA2FF] focus:ring-offset-2 focus:ring-offset-[#071521]"
-          style={{ minHeight: '44px' }}
+          className="btn-ghost flex items-center gap-2 text-sm"
         >
           <LogOut className="h-4 w-4" />
           <span className="hidden md:inline">Logout</span>
@@ -58,13 +57,12 @@ export function ZkLoginButton() {
     );
   }
 
-  // Login button
+  // Login button - ghost style, not stealing focus
   return (
     <button
       onClick={handleLogin}
       disabled={loading}
-      className="flex items-center gap-2 rounded-xl bg-gradient-to-br from-[#4DA2FF] to-[#5AE0E5] px-4 py-2 text-sm font-medium text-white shadow-lg shadow-[#4DA2FF]/20 transition-all hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[#4DA2FF] focus:ring-offset-2 focus:ring-offset-[#071521]"
-      style={{ minHeight: '44px' }}
+      className="btn-ghost flex items-center gap-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
     >
       {loading ? (
         <>
@@ -79,7 +77,7 @@ export function ZkLoginButton() {
             <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
           </svg>
-          <span>Login with Google</span>
+          <span>Sign in with Google</span>
         </>
       )}
     </button>

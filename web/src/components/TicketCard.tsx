@@ -1,5 +1,6 @@
 import { Ticket as TicketIcon, Calendar, MapPin } from 'lucide-react';
 import { Button } from './Button';
+import { motion } from 'framer-motion';
 
 type TicketStatus = 'owned' | 'listed' | 'used' | 'transferred';
 
@@ -54,10 +55,10 @@ const statusLabels: Record<TicketStatus, string> = {
 };
 
 const statusColors: Record<TicketStatus, string> = {
-  owned: 'bg-[#4DA2FF]/10 text-[#4DA2FF] border-[#4DA2FF]/30',
-  listed: 'bg-green-500/10 text-green-500 border-green-500/30',
-  used: 'bg-white/5 text-white/50 border-white/10',
-  transferred: 'bg-orange-500/10 text-orange-500 border-orange-500/30',
+  owned: 'bg-brand/12 text-brand border-brand/20',
+  listed: 'bg-success/12 text-success border-success/20',
+  used: 'bg-surface-2 text-muted border-border',
+  transferred: 'bg-warning/12 text-warning border-warning/20',
 };
 
 export function TicketCard({
@@ -69,10 +70,13 @@ export function TicketCard({
   onDetails,
 }: TicketCardProps) {
   return (
-    <article className="card group overflow-hidden p-0 transition-transform duration-200 hover:scale-[1.01]">
-      <div className="flex gap-4 p-4">
-        {/* Poster */}
-        <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-[#4DA2FF]/20 to-[#5AE0E5]/20">
+    <motion.article
+      whileHover={{ y: -2 }}
+      className="card group overflow-hidden p-0 transition-all duration-200 hover:shadow-[0_12px_32px_rgba(3,15,28,0.18)]"
+    >
+      <div className="flex gap-4 p-5">
+        {/* Poster with subtle inner stroke */}
+        <div className="poster-img relative h-28 w-28 flex-shrink-0 overflow-hidden rounded-xl bg-surface-2">
           {ticket.posterUrl ? (
             <img
               src={ticket.posterUrl}
@@ -81,37 +85,37 @@ export function TicketCard({
               loading="lazy"
             />
           ) : (
-            <div className="flex h-full items-center justify-center text-white/30">
-              <TicketIcon className="h-8 w-8" />
+            <div className="flex h-full items-center justify-center text-muted/30">
+              <TicketIcon className="h-10 w-10" />
             </div>
           )}
         </div>
 
         {/* Content */}
         <div className="min-w-0 flex-1">
-          <h3 className="truncate font-medium text-[#DCE7F0]">{ticket.title}</h3>
-          <div className="mt-1 space-y-0.5 text-sm text-[var(--muted)]">
-            <div className="flex items-center gap-1.5">
-              <Calendar className="h-3 w-3 flex-shrink-0" />
-              <span className="tabular-nums">{formatDate(ticket.dateISO)}</span>
-              <span className="text-white/30">•</span>
+          <h3 className="truncate font-[Inter_Tight] text-lg font-semibold tracking-tight text-ink">{ticket.title}</h3>
+          <div className="mt-2 space-y-1.5 text-[15px] text-muted">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 flex-shrink-0 opacity-50" />
+              <span className="tabular">{formatDate(ticket.dateISO)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 flex-shrink-0 opacity-50" />
               <span className="truncate">{ticket.venue}</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <MapPin className="h-3 w-3 flex-shrink-0" />
-              <span className="tabular-nums">{seatLabel(ticket.seat)}</span>
+            <div className="flex items-center gap-2">
+              <TicketIcon className="h-4 w-4 flex-shrink-0 opacity-50" />
+              <span className="tabular text-sm">{seatLabel(ticket.seat)}</span>
             </div>
           </div>
 
           {/* Status chips */}
-          <div className="mt-2 flex flex-wrap gap-2">
-            <span
-              className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusColors[ticket.status]}`}
-            >
+          <div className="mt-3.5 flex flex-wrap items-center gap-2">
+            <span className={`chip border text-xs font-medium ${statusColors[ticket.status]}`}>
               {statusLabels[ticket.status]}
             </span>
             {ticket.status === 'listed' && ticket.listing && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-white/12 bg-white/[0.02] px-2.5 py-0.5 text-xs font-medium tabular-nums text-[#DCE7F0]">
+              <span className="chip border border-border bg-surface-2 tabular text-xs font-semibold text-ink">
                 {ticket.listing.priceSUI.toFixed(2)} SUI
               </span>
             )}
@@ -120,33 +124,28 @@ export function TicketCard({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 border-t border-white/10 p-3">
-        <Button onClick={() => onViewQR(ticket)} variant="primary" className="flex-1">
+      <div className="flex gap-2 border-t border-border bg-surface-1/40 p-3">
+        <Button onClick={() => onViewQR(ticket)} variant="primary" className="flex-1 text-sm">
           View QR
         </Button>
         {ticket.status === 'owned' && (
-          <Button onClick={() => onList(ticket)} variant="secondary" className="flex-1">
+          <Button onClick={() => onList(ticket)} variant="outline" className="flex-1 text-sm">
             List
           </Button>
         )}
         {ticket.status === 'listed' && (
-          <Button onClick={() => onCancelListing(ticket)} variant="secondary" className="flex-1">
+          <Button onClick={() => onCancelListing(ticket)} variant="outline" className="flex-1 text-sm">
             Cancel
           </Button>
         )}
         <button
           onClick={() => onTransfer(ticket)}
-          className="rounded-xl px-4 py-2 text-sm font-medium text-white/85 transition-colors hover:bg-white/5"
+          className="rounded-lg px-3.5 text-sm font-medium text-muted transition-all hover:bg-surface-2 hover:text-ink focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 focus:ring-offset-canvas"
+          style={{ minHeight: '40px' }}
         >
           Transfer
         </button>
-        <button
-          onClick={() => onDetails(ticket)}
-          className="rounded-xl px-4 py-2 text-sm font-medium text-white/85 transition-colors hover:bg-white/5"
-        >
-          Details
-        </button>
       </div>
-    </article>
+    </motion.article>
   );
 }

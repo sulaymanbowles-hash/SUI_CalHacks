@@ -1,14 +1,16 @@
-/** @type {import('tailwindcss').Config} */
+import type { Config } from 'tailwindcss';
+
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       colors: {
-        // Sui-native palette - more vibrant
+        canvas: '#061522',
+        ink: '#E6F0F7',
+        muted: 'rgba(230, 240, 247, 0.74)',
         brand: {
+          DEFAULT: '#4DA2FF',
+          2: '#11C7C5',
           900: '#0A0E1A',
           800: '#0F1419',
           700: '#1A1F2E',
@@ -37,11 +39,34 @@ export default {
           300: '#94A3B8',
           400: '#64748B',
         },
+        surface: {
+          1: 'rgba(255, 255, 255, 0.02)',
+          2: 'rgba(255, 255, 255, 0.04)',
+        },
+        border: 'rgba(255, 255, 255, 0.12)',
+        success: '#2ED67A',
+        warning: '#FFB020',
+        danger: '#FF5C6C',
+      },
+      borderRadius: {
+        DEFAULT: '14px',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Consolas', 'monospace'],
-        display: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Inter Tight', 'Inter', 'system-ui', 'sans-serif'],
+        mono: ['SF Mono', 'Monaco', 'Consolas', 'monospace'],
+      },
+      fontSize: {
+        'display-lg': ['44px', { lineHeight: '1.15', letterSpacing: '-0.05em' }],
+        'display-md': ['32px', { lineHeight: '1.15', letterSpacing: '-0.04em' }],
+        'display-sm': ['24px', { lineHeight: '1.15', letterSpacing: '-0.03em' }],
+      },
+      spacing: {
+        'section': '88px',
+        'card': '24px',
+      },
+      boxShadow: {
+        card: '0 8px 24px rgba(3, 15, 28, 0.12)',
       },
       animation: {
         'fade-in': 'fadeIn 200ms ease-out',
@@ -79,4 +104,4 @@ export default {
     },
   },
   plugins: [],
-}
+} satisfies Config;
