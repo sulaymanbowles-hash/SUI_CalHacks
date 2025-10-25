@@ -313,7 +313,7 @@ export function AppConsole() {
         eventId: publishedIds.eventId,
         eventCapId: publishedIds.eventCapId,
         kind: 0, // PRIMARY
-        priceMist: Number(toMist(firstTicket.price)),
+        priceMist: toMist(firstTicket.price),
         startTs: now, // Start immediately
         endTs: Math.floor(eventStart + 86400), // End 24h after event
         perWalletLimit: 10,
@@ -1504,26 +1504,11 @@ function StepPublish({
             </div>
 
             {isDeveloperMode && publishedIds.eventId && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="mt-4 rounded-lg border border-white/12 bg-white/[0.02] p-4"
-              >
-                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#4DA2FF]">
-                  <Settings className="h-4 w-4" />
-                  Developer Info
-                </div>
-                <div className="space-y-2 font-mono text-xs text-white/60">
-                  <div className="flex items-center justify-between">
-                    <span>Package:</span>
-                    <span className="text-white">{PACKAGE_ID?.slice(0, 12) || 'Not deployed'}...</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Policy:</span>
-                    <span className="text-white">{POLICY_ID?.slice(0, 12) || 'Not deployed'}...</span>
-                  </div>
-                </div>
-              </motion.div>
+              <div className="mt-4 space-y-2 rounded-lg bg-black/20 p-3 font-mono text-xs text-green-300">
+                <div>Event ID: {publishedIds.eventId.slice(0, 30)}...</div>
+                {publishedIds.eventCapId && <div>Event Cap: {publishedIds.eventCapId.slice(0, 30)}...</div>}
+                {publishedIds.gateKeeperCapId && <div>Gate Cap: {publishedIds.gateKeeperCapId.slice(0, 30)}...</div>}
+              </div>
             )}
 
             <div className="mt-6 flex gap-3">

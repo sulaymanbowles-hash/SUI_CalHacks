@@ -17,7 +17,7 @@ function MarketplaceRow() {
       <FadeRise>
         <div className="mb-6 flex items-end justify-between">
           <h2 className="font-[Inter_Tight] text-2xl tracking-tight text-[#DCE7F0]">Upcoming events</h2>
-          <a href="/app" className="text-sm text-[var(--muted)] hover:text-[#DCE7F0]">View all →</a>
+          <Link to="/events" className="text-sm text-[var(--muted)] hover:text-[#DCE7F0]">View all →</Link>
         </div>
       </FadeRise>
       <Stagger delay={0.1}>

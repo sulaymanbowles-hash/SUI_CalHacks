@@ -5,11 +5,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Header } from './components/Header';
 import { ScrollProgress } from './components/motion/ScrollProgress';
 import { Landing } from './pages/Landing';
-import { BuyerApp } from './pages/BuyerApp';
 import { AppConsole } from './pages/AppConsole';
 import { MyTickets } from './pages/MyTickets';
 import { CheckIn } from './pages/CheckIn';
 import { AuthCallback } from './pages/AuthCallback';
+import { Events } from './pages/Events';
 
 // Configure Sui network
 const { networkConfig } = createNetworkConfig({
@@ -31,12 +31,10 @@ function App() {
               <Header />
               <Routes>
                 <Route path="/" element={<Landing />} />
-                <Route path="/app" element={<AppConsole />} />
-                <Route path="/console" element={<AppConsole />} />
-                <Route path="/tickets" element={<MyTickets />} />
+                <Route path="/events" element={<Events />} />
                 <Route path="/my-tickets" element={<MyTickets />} />
+                <Route path="/console" element={<AppConsole />} />
                 <Route path="/checkin" element={<CheckIn />} />
-                <Route path="/buy" element={<BuyerApp />} />
                 <Route path="/auth" element={<AuthCallback />} />
               </Routes>
             </div>

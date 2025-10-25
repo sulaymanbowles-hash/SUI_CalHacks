@@ -8,15 +8,13 @@ import { ChevronDown, User, Wallet, DollarSign, LogOut } from 'lucide-react';
 
 // Two-lane navigation: Visitors vs Organizers
 const VISITOR_NAV = [
-  { href: '/app', label: 'Events' },
+  { href: '/events', label: 'Events' },
   { href: '/my-tickets', label: 'My Tickets' },
-  { href: '/sell', label: 'Sell' },
 ];
 
 const ORGANIZER_NAV = [
   { href: '/console', label: 'Console' },
   { href: '/checkin', label: 'Scanner' },
-  { href: '/payouts', label: 'Payouts' },
 ];
 
 export function Header() {
