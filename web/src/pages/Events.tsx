@@ -11,12 +11,11 @@ import {
   MapPin,
   X,
   ChevronDown,
-  Loader2,
   Sparkles,
   BadgeCheck,
-  TrendingUp,
   ArrowRight,
 } from 'lucide-react';
+import { tokens } from '../design-tokens';
 
 interface Event {
   id: string;
@@ -107,18 +106,22 @@ export function Events() {
   const containerRef = useRef<HTMLDivElement>(null);
   const searchBarRef = useRef<HTMLDivElement>(null);
 
+  const prefersReducedMotion = useRef(
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+
   useEffect(() => {
-    // Simulate loading
-    setTimeout(() => setLoading(false), 800);
+    // Simulate loading with dominant color placeholders
+    const timer = setTimeout(() => setLoading(false), 600);
     
     const handleScroll = () => {
       const sy = window.scrollY;
       setScrollY(sy);
-      setIsSticky(sy > 120);
+      setIsSticky(sy > 80);
     };
     
     const handleMouseMove = (e: MouseEvent) => {
-      if (!containerRef.current) return;
+      if (prefersReducedMotion.current || !containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const isInside = e.clientY >= rect.top && e.clientY <= rect.bottom;
       if (isInside) {
@@ -129,13 +132,13 @@ export function Events() {
       }
     };
 
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!prefersReducedMotion) {
+    if (!prefersReducedMotion.current) {
       window.addEventListener('scroll', handleScroll, { passive: true });
       window.addEventListener('mousemove', handleMouseMove, { passive: true });
     }
 
     return () => {
+      clearTimeout(timer);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('mousemove', handleMouseMove);
     };
@@ -180,27 +183,35 @@ export function Events() {
 
   const hasActiveFilters = selectedFilters.length > 0 || searchQuery.length > 0;
 
-  const auroraParallax = scrollY * 0.012;
-  const parallaxX = (mousePos.x - 0.5) * 10;
-  const parallaxY = (mousePos.y - 0.5) * 10;
-  const glowX = 50 + (mousePos.x - 0.5) * 6;
-  const glowY = 50 + (mousePos.y - 0.5) * 6;
+  const auroraParallax = prefersReducedMotion.current ? 0 : scrollY * 0.012;
+  const parallaxX = prefersReducedMotion.current ? 0 : (mousePos.x - 0.5) * 8;
+  const parallaxY = prefersReducedMotion.current ? 0 : (mousePos.y - 0.5) * 8;
+  const glowX = 50 + (prefersReducedMotion.current ? 0 : (mousePos.x - 0.5) * 5);
+  const glowY = 50 + (prefersReducedMotion.current ? 0 : (mousePos.y - 0.5) * 5);
 
   return (
-    <main ref={containerRef} className="relative min-h-screen overflow-hidden bg-[#061522]">
+    <main ref={containerRef} className="relative min-h-screen overflow-hidden" style={{ backgroundColor: tokens.colors.bg.canvas }}>
       {/* Ambient background with parallax drift */}
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[#061522] to-transparent" />
+        
+        {/* Main aurora orb */}
         <div 
-          className="aurora-primary absolute h-[45vmax] w-[45vmax]"
+          className="ambient-orb absolute"
           style={{
+            width: tokens.ambient.orb.radius,
+            height: tokens.ambient.orb.radius,
             left: '35%',
             top: `calc(25% + ${auroraParallax}px)`,
-            opacity: 0.25,
+            opacity: tokens.ambient.orb.opacity,
             transform: `translate3d(${parallaxX}px, ${parallaxY}px, 0)`,
-            transition: 'transform 0.55s cubic-bezier(0.23, 1, 0.32, 1)',
+            background: 'radial-gradient(circle, rgba(77,162,255,.32) 0%, transparent 62%)',
+            filter: `blur(${tokens.ambient.orb.blur})`,
+            transition: prefersReducedMotion.current ? 'none' : 'transform 0.55s cubic-bezier(0.23, 1, 0.32, 1)',
           }}
         />
+
+        {/* Sui glyph watermark */}
         <div 
           className="glyph-pattern absolute inset-0"
           style={{
@@ -208,26 +219,32 @@ export function Events() {
             backgroundImage: "url(/brand/sui/glyph.svg)",
             backgroundSize: "48px 48px",
             backgroundRepeat: "repeat",
-            opacity: Math.max(0.02, 0.028 * (1 - scrollY / 800)),
+            opacity: Math.max(0.01, tokens.ambient.noise.opacity * (1 - scrollY / 800)),
             WebkitMaskImage: "radial-gradient(50% 50% at 50% 40%, #000 0%, rgba(0,0,0,0.25) 50%, transparent 100%)",
             maskImage: "radial-gradient(50% 50% at 50% 40%, #000 0%, rgba(0,0,0,0.25) 50%, transparent 100%)",
           }}
         />
+
+        {/* Interactive proximity glow */}
         <div 
-          className="proximity-glow absolute h-[28vmax] w-[28vmax]"
+          className="proximity-glow absolute"
           style={{
+            width: tokens.ambient.glow.radius,
+            height: tokens.ambient.glow.radius,
             left: `${glowX - 14}%`,
             top: `${glowY - 14}%`,
-            background: "radial-gradient(circle, rgba(77,162,255,.35) 0%, transparent 68%)",
-            filter: "blur(52px)",
-            opacity: 0.07,
+            background: `radial-gradient(circle, ${tokens.colors.brand.primary}35 0%, transparent 68%)`,
+            filter: `blur(${tokens.ambient.glow.blur})`,
+            opacity: tokens.ambient.glow.opacity,
             transform: `translate3d(${parallaxX * 0.3}px, ${parallaxY * 0.3}px, 0)`,
-            transition: "left 0.55s cubic-bezier(0.23, 1, 0.32, 1), top 0.55s cubic-bezier(0.23, 1, 0.32, 1), transform 0.55s cubic-bezier(0.23, 1, 0.32, 1)",
+            transition: prefersReducedMotion.current 
+              ? 'none' 
+              : 'left 0.55s cubic-bezier(0.23, 1, 0.32, 1), top 0.55s cubic-bezier(0.23, 1, 0.32, 1), transform 0.55s cubic-bezier(0.23, 1, 0.32, 1)',
           }}
         />
       </div>
 
-      <div className="mx-auto max-w-screen-2xl px-6 pt-[72px] pb-[96px]">
+      <div className="mx-auto" style={{ maxWidth: tokens.layout.maxWidth, padding: `56px ${tokens.layout.gutter} 80px` }}>
         {/* Sticky Search & Filters Bar */}
         <motion.div
           ref={searchBarRef}
@@ -236,22 +253,51 @@ export function Events() {
           transition={{ duration: 0.4 }}
           className={`${
             isSticky 
-              ? 'fixed top-[64px] left-0 right-0 z-40 bg-[#061522]/95 backdrop-blur-xl border-b border-white/10 shadow-lg' 
+              ? 'fixed top-[64px] left-0 right-0 z-40 backdrop-blur-xl border-b shadow-lg' 
               : 'relative'
-          } transition-all duration-300`}
+          }`}
+          style={{
+            backgroundColor: isSticky ? 'rgba(6, 21, 34, 0.95)' : 'transparent',
+            borderColor: isSticky ? tokens.colors.border.default : 'transparent',
+            boxShadow: isSticky ? tokens.shadow[2] : 'none',
+            transition: `all ${tokens.motion.duration.slow} ${tokens.motion.easing.default}`,
+          }}
         >
-          <div className="mx-auto max-w-screen-2xl px-6 py-4">
+          <div className="mx-auto" style={{ maxWidth: tokens.layout.maxWidth, padding: `${tokens.spacing.md} ${tokens.layout.gutter}` }}>
             {/* Search rail */}
             <div className="relative mx-auto mb-4 max-w-2xl">
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2" style={{ width: tokens.icon.button, height: tokens.icon.button, color: tokens.colors.text.muted }} />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search events, artists, venues…"
-                className="h-14 w-full rounded-2xl border border-white/12 bg-white/[0.03] pl-12 pr-20 text-[15px] text-white placeholder-white/50 backdrop-blur-xl transition-all focus:border-[#4DA2FF]/50 focus:bg-white/[0.05] focus:outline-none focus:ring-2 focus:ring-[#4DA2FF]/20"
+                className="h-14 w-full pl-12 pr-20 backdrop-blur-xl transition-all focus:outline-none"
+                style={{
+                  borderRadius: tokens.radius.xl,
+                  border: `1px solid ${tokens.colors.border.default}`,
+                  backgroundColor: tokens.colors.bg.surface1,
+                  color: tokens.colors.text.primary,
+                  fontSize: tokens.typography.body.size,
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = tokens.colors.border.focus;
+                  e.target.style.boxShadow = `0 0 0 2px ${tokens.colors.brand.primary}33`;
+                  e.target.style.backgroundColor = tokens.colors.bg.surface2;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = tokens.colors.border.default;
+                  e.target.style.boxShadow = 'none';
+                  e.target.style.backgroundColor = tokens.colors.bg.surface1;
+                }}
               />
-              <kbd className="absolute right-4 top-1/2 -translate-y-1/2 rounded-lg border border-white/12 bg-white/[0.04] px-2 py-1 font-mono text-xs text-white/60">
+              <kbd className="absolute right-4 top-1/2 -translate-y-1/2 px-2 py-1 font-mono" style={{
+                borderRadius: tokens.radius.md,
+                border: `1px solid ${tokens.colors.border.default}`,
+                backgroundColor: tokens.colors.bg.surface1,
+                fontSize: tokens.typography.micro.size,
+                color: tokens.colors.text.muted,
+              }}>
                 ⌘K
               </kbd>
             </div>
@@ -265,28 +311,77 @@ export function Events() {
                   <button
                     key={filter.id}
                     onClick={() => toggleFilter(filter.id)}
-                    className={`group relative rounded-full px-4 py-2 text-sm font-medium transition-all duration-120 ${
-                      isSelected
-                        ? 'bg-[#4DA2FF]/20 text-[#4DA2FF] ring-2 ring-[#4DA2FF]/30 shadow-[0_0_12px_rgba(77,162,255,0.12)] scale-[1.02] hover:scale-105'
-                        : 'bg-white/[0.04] text-white/70 hover:bg-white/[0.08] hover:text-white hover:scale-[1.02]'
-                    }`}
+                    className="group relative transition-all"
+                    style={{
+                      borderRadius: tokens.radius.full,
+                      padding: `${tokens.spacing.xs} ${tokens.spacing.md}`,
+                      fontSize: tokens.typography.small.size,
+                      fontWeight: 500,
+                      backgroundColor: isSelected ? tokens.colors.status.upcomingBg : tokens.colors.bg.surface1,
+                      color: isSelected ? tokens.colors.brand.primary : tokens.colors.text.secondary,
+                      border: isSelected ? `2px solid ${tokens.colors.brand.primary}4D` : 'none',
+                      boxShadow: isSelected ? tokens.shadow.glow : 'none',
+                      transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                      transition: `all ${tokens.motion.duration.fast} ${tokens.motion.easing.default}`,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = tokens.colors.bg.surface2;
+                        e.currentTarget.style.color = tokens.colors.text.primary;
+                        e.currentTarget.style.transform = 'scale(1.02)';
+                      } else {
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = tokens.colors.bg.surface1;
+                        e.currentTarget.style.color = tokens.colors.text.secondary;
+                        e.currentTarget.style.transform = 'scale(1)';
+                      } else {
+                        e.currentTarget.style.transform = 'scale(1.02)';
+                      }
+                    }}
                   >
                     {filter.label}
                     {isSelected && count > 0 && (
-                      <span className="ml-1.5 text-xs opacity-80">• {count}</span>
+                      <span className="ml-1.5 opacity-80" style={{ fontSize: tokens.typography.micro.size }}>
+                        • {count}
+                      </span>
                     )}
                   </button>
                 );
               })}
+              
+              {/* Filters button */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 rounded-full bg-white/[0.04] px-4 py-2 text-sm font-medium text-white/70 transition-all duration-120 hover:bg-white/[0.08] hover:text-white hover:scale-[1.02]"
+                className="flex items-center gap-2 transition-all"
+                style={{
+                  borderRadius: tokens.radius.full,
+                  padding: `${tokens.spacing.xs} ${tokens.spacing.md}`,
+                  fontSize: tokens.typography.small.size,
+                  fontWeight: 500,
+                  backgroundColor: tokens.colors.bg.surface1,
+                  color: tokens.colors.text.secondary,
+                  transition: `all ${tokens.motion.duration.fast} ${tokens.motion.easing.default}`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = tokens.colors.bg.surface2;
+                  e.currentTarget.style.color = tokens.colors.text.primary;
+                  e.currentTarget.style.transform = 'scale(1.02)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = tokens.colors.bg.surface1;
+                  e.currentTarget.style.color = tokens.colors.text.secondary;
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
               >
-                <SlidersHorizontal className="h-4 w-4" />
+                <SlidersHorizontal style={{ width: tokens.icon.inline, height: tokens.icon.inline }} />
                 Filters
               </button>
               
-              {/* Reset chip - appears when filters active */}
+              {/* Reset chip */}
               <AnimatePresence>
                 {hasActiveFilters && (
                   <motion.button
@@ -294,37 +389,65 @@ export function Events() {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     onClick={clearAllFilters}
-                    className="flex items-center gap-1.5 rounded-full bg-white/[0.08] px-3.5 py-2 text-sm font-medium text-white/90 transition-all duration-120 hover:bg-white/[0.12] hover:scale-[1.02]"
+                    className="flex items-center gap-1.5 transition-all"
+                    style={{
+                      borderRadius: tokens.radius.full,
+                      padding: `${tokens.spacing.xs} 14px`,
+                      fontSize: tokens.typography.small.size,
+                      fontWeight: 500,
+                      backgroundColor: tokens.colors.bg.surface2,
+                      color: tokens.colors.text.primary,
+                      transition: `all ${tokens.motion.duration.fast} ${tokens.motion.easing.default}`,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = tokens.colors.bg.surface3;
+                      e.currentTarget.style.transform = 'scale(1.02)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = tokens.colors.bg.surface2;
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <X style={{ width: '14px', height: '14px' }} />
                     Reset
                   </motion.button>
                 )}
               </AnimatePresence>
             </div>
 
-            {/* Sort selector */}
-            <div className="flex justify-end">
+            {/* Sort selector + result count */}
+            <div className="flex items-center justify-between">
+              <div style={{ fontSize: tokens.typography.small.size, color: tokens.colors.text.tertiary }}>
+                {filteredEvents.length} events
+              </div>
               <div className="relative">
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="appearance-none rounded-xl border border-white/12 bg-white/[0.03] py-2 pl-4 pr-10 text-sm text-white backdrop-blur-xl transition-all focus:border-[#4DA2FF]/50 focus:outline-none focus:ring-2 focus:ring-[#4DA2FF]/20"
+                  className="appearance-none backdrop-blur-xl transition-all focus:outline-none"
+                  style={{
+                    borderRadius: tokens.radius.md,
+                    border: `1px solid ${tokens.colors.border.default}`,
+                    backgroundColor: tokens.colors.bg.surface1,
+                    padding: `${tokens.spacing.xs} ${tokens.spacing.xl} ${tokens.spacing.xs} ${tokens.spacing.md}`,
+                    fontSize: tokens.typography.small.size,
+                    color: tokens.colors.text.primary,
+                  }}
                 >
                   {SORT_OPTIONS.map((opt) => (
                     <option key={opt.id} value={opt.id}>{opt.label}</option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/60" />
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" style={{ width: tokens.icon.inline, height: tokens.icon.inline, color: tokens.colors.text.muted }} />
               </div>
             </div>
           </div>
         </motion.div>
 
         {/* Spacer when sticky */}
-        {isSticky && <div className="h-[140px]" />}
+        {isSticky && <div className="h-[160px]" />}
 
-        {/* Loading skeletons */}
+        {/* Loading skeletons with shimmer */}
         {loading ? (
           <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[...Array(8)].map((_, i) => (
@@ -332,18 +455,29 @@ export function Events() {
                 key={i}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04, duration: 0.26 }}
-                className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-sm"
+                transition={{ delay: i * 0.04, duration: 0.22 }}
+                className="overflow-hidden"
+                style={{
+                  borderRadius: tokens.radius.lg,
+                  border: `1px solid ${tokens.colors.border.default}`,
+                  backgroundColor: tokens.colors.bg.card,
+                }}
               >
-                {/* Skeleton image */}
-                <div className="aspect-[16/9] animate-pulse bg-gradient-to-br from-white/[0.06] to-white/[0.02]" />
+                {/* Skeleton image with shimmer */}
+                <div className="aspect-[16/9] relative overflow-hidden" style={{ backgroundColor: tokens.colors.bg.surface1 }}>
+                  <div className="shimmer-effect absolute inset-0" />
+                </div>
                 {/* Skeleton content */}
                 <div className="p-4 space-y-3">
-                  <div className="h-5 w-3/4 animate-pulse rounded bg-white/[0.06]" />
-                  <div className="h-3 w-1/2 animate-pulse rounded bg-white/[0.04]" />
+                  <div className="h-5 w-3/4 rounded" style={{ backgroundColor: tokens.colors.bg.surface2 }}>
+                    <div className="shimmer-effect h-full w-full" />
+                  </div>
+                  <div className="h-3 w-1/2 rounded" style={{ backgroundColor: tokens.colors.bg.surface1 }}>
+                    <div className="shimmer-effect h-full w-full" />
+                  </div>
                   <div className="flex justify-between pt-2">
-                    <div className="h-4 w-16 animate-pulse rounded bg-white/[0.06]" />
-                    <div className="h-4 w-20 animate-pulse rounded bg-white/[0.04]" />
+                    <div className="h-4 w-16 rounded" style={{ backgroundColor: tokens.colors.bg.surface2 }} />
+                    <div className="h-4 w-20 rounded" style={{ backgroundColor: tokens.colors.bg.surface1 }} />
                   </div>
                 </div>
               </motion.div>
@@ -351,303 +485,340 @@ export function Events() {
           </div>
         ) : (
           <>
-            {/* Event Grid - 12-column system with consistent gutters */}
+            {/* Event Grid */}
             <motion.div 
               layout
               className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             >
-              {filteredEvents.map((event, i) => {
-                const availabilityPercent = (event.available / event.total) * 100;
-                const isLowStock = availabilityPercent < 15;
-                
-                return (
-                  <motion.button
-                    key={event.id}
-                    layout
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.96 }}
-                    transition={{ 
-                      delay: 0.05 + i * 0.04, 
-                      duration: 0.24,
-                      layout: { type: 'spring', stiffness: 240, damping: 28 }
-                    }}
-                    onClick={() => setSelectedEvent(event)}
-                    className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] text-left backdrop-blur-sm transition-all duration-240 hover:-translate-y-2 hover:border-white/20 hover:bg-white/[0.04] hover:shadow-[0_12px_32px_rgba(3,15,28,0.14)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4DA2FF] focus-visible:ring-offset-2 focus-visible:ring-offset-[#061522]"
-                  >
-                    {/* Cover image with consistent 16:9 aspect */}
-                    <div className="relative aspect-[16/9] overflow-hidden bg-gradient-to-br from-[#4DA2FF]/15 to-[#5AE0E5]/10">
-                      {event.coverImage ? (
-                        <img 
-                          src={event.coverImage} 
-                          alt={event.title}
-                          className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-103"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-white/20">
-                          <Calendar className="h-12 w-12" />
-                        </div>
-                      )}
-                      
-                      {/* Date pill - top left */}
-                      <div className="absolute left-3 top-3 rounded-lg bg-black/70 px-2.5 py-1.5 backdrop-blur-sm">
-                        <div className="text-[10px] font-medium uppercase tracking-wide text-white/80">
-                          {new Date(event.date).toLocaleDateString('en-US', { month: 'short' })}
-                        </div>
-                        <div className="font-mono text-lg font-bold leading-none text-white">
-                          {new Date(event.date).getDate()}
-                        </div>
-                      </div>
-
-                      {/* Badges - top right */}
-                      <div className="absolute right-3 top-3 flex flex-col gap-1.5">
-                        {event.verified && (
-                          <div className="flex items-center gap-1 rounded-lg bg-green-500/90 px-2 py-1 backdrop-blur-sm">
-                            <BadgeCheck className="h-3 w-3 text-white" />
-                            <span className="text-[10px] font-semibold text-white">Verified</span>
-                          </div>
-                        )}
-                        {event.trending && (
-                          <div className="flex items-center gap-1 rounded-lg bg-[#4DA2FF]/90 px-2 py-1 backdrop-blur-sm">
-                            <Sparkles className="h-3 w-3 text-white" />
-                            <span className="text-[10px] font-semibold text-white">Hot</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Dark gradient overlay for text legibility */}
-                      <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/60 to-transparent" />
-                      
-                      {/* Hover arrow - bottom right */}
-                      <div className="absolute bottom-3 right-3 flex items-center gap-1 text-xs font-medium text-white opacity-0 transition-all duration-240 group-hover:opacity-100 group-hover:translate-x-1">
-                        <ArrowRight className="h-4 w-4" />
-                      </div>
-                    </div>
-
-                    {/* Content - consistent height */}
-                    <div className="p-4">
-                      <h3 className="mb-2 line-clamp-1 text-[20px] leading-[1.25] font-semibold text-white">{event.title}</h3>
-                      
-                      <div className="mb-3 space-y-1">
-                        <div className="flex items-center gap-1.5 text-[13px] leading-[1.4] text-white/60">
-                          <MapPin className="h-4 w-4 flex-shrink-0" />
-                          <span className="line-clamp-1">{event.venue}, {event.city}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[13px] leading-[1.4] text-white/60">
-                          <Calendar className="h-4 w-4 flex-shrink-0" />
-                          <span>
-                            {new Date(event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} • {event.time}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Meta row */}
-                      <div className="flex items-end justify-between pt-2">
-                        <div>
-                          <div className="text-[10px] font-medium uppercase tracking-wide text-white/50">From</div>
-                          <div className="text-[20px] font-semibold tabular-nums text-white">${event.price}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-[10px] font-medium uppercase tracking-wide text-white/50">
-                            {isLowStock ? 'Low stock' : 'Available'}
-                          </div>
-                          <div className={`text-[13px] tabular-nums ${
-                            isLowStock ? 'font-semibold text-orange-400' : 'text-white/60'
-                          }`}>
-                            {isLowStock && '⚡ '}
-                            {event.available} / {event.total}
-                          </div>
-                          {isLowStock && (
-                            <div className="mt-1 h-1 w-16 overflow-hidden rounded-full bg-white/10">
-                              <div 
-                                className="h-full bg-orange-400 transition-all"
-                                style={{ width: `${availabilityPercent}%` }}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Hover CTA bar */}
-                      <div className="mt-3 overflow-hidden opacity-0 transition-all duration-240 group-hover:opacity-100">
-                        <div className="flex items-center justify-center gap-2 rounded-lg border border-[#4DA2FF]/30 bg-[#4DA2FF]/10 py-2.5 text-sm font-medium text-[#4DA2FF]">
-                          View tickets
-                          <ArrowRight className="h-4 w-4" />
-                        </div>
-                      </div>
-                    </div>
-                  </motion.button>
-                );
-              })}
+              {filteredEvents.map((event, i) => (
+                <EventCard key={event.id} event={event} index={i} onClick={() => setSelectedEvent(event)} />
+              ))}
             </motion.div>
 
             {/* Empty state */}
             {filteredEvents.length === 0 && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="mx-auto mt-16 max-w-md text-center"
-              >
-                <div className="mb-4 text-white/30">
-                  <Search className="mx-auto h-12 w-12" />
-                </div>
-                <h3 className="mb-2 text-xl font-semibold text-white">No events match</h3>
-                <p className="mb-6 text-sm text-white/60">Try removing filters or broadening your search</p>
-                <div className="flex justify-center gap-3">
-                  <button
-                    onClick={clearAllFilters}
-                    className="rounded-xl bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-white/80 transition-all duration-120 hover:bg-white/[0.1] hover:scale-[1.02]"
-                  >
-                    Clear filters
-                  </button>
-                </div>
-              </motion.div>
+              <EmptyState onClear={clearAllFilters} />
             )}
           </>
         )}
       </div>
 
-      {/* Event Detail Sheet - unchanged */}
+      {/* Event Detail Sheet */}
       <AnimatePresence>
         {selectedEvent && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSelectedEvent(null)}
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm md:items-center"
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 12, scale: 0.98 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-3xl overflow-hidden rounded-2xl border border-white/12 bg-[#0a1929] shadow-2xl"
-            >
-              <button
-                onClick={() => setSelectedEvent(null)}
-                className="absolute right-4 top-4 z-10 rounded-lg bg-black/40 p-2 text-white/80 backdrop-blur-sm transition-all hover:bg-black/60 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4DA2FF]"
-              >
-                <X className="h-5 w-5" />
-              </button>
-
-              <div className="grid gap-6 p-6 md:grid-cols-2">
-                {/* Left: Cover */}
-                <div className="aspect-[3/4] overflow-hidden rounded-xl bg-gradient-to-br from-[#4DA2FF]/15 to-[#5AE0E5]/10">
-                  {selectedEvent.coverImage ? (
-                    <img 
-                      src={selectedEvent.coverImage} 
-                      alt={selectedEvent.title}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-white/20">
-                      <Calendar className="h-16 w-16" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Right: Details & CTA */}
-                <div className="flex flex-col">
-                  <div className="mb-4 flex items-start gap-2">
-                    <h2 className="flex-1 text-2xl font-semibold text-white">{selectedEvent.title}</h2>
-                    {selectedEvent.verified && (
-                      <div className="rounded-lg bg-green-500/20 p-1.5">
-                        <BadgeCheck className="h-4 w-4 text-green-400" />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mb-6 space-y-3 text-sm text-white/70">
-                    <div className="flex items-start gap-3">
-                      <Calendar className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                      <div>
-                        <div>{new Date(selectedEvent.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                        <div className="text-white/50">{selectedEvent.time}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                      <div>
-                        <div>{selectedEvent.venue}</div>
-                        <div className="text-white/50">{selectedEvent.city}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Price breakdown */}
-                  <div className="mb-6 rounded-xl border border-white/10 bg-white/[0.02] p-4">
-                    <div className="mb-3 text-xs font-medium uppercase tracking-wide text-white/50">Price breakdown</div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-white/70">Ticket price</span>
-                        <span className="font-semibold tabular-nums text-white">${selectedEvent.price}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-white/70">Network fee</span>
-                        <span className="font-semibold tabular-nums text-white">$0.03</span>
-                      </div>
-                      <div className="border-t border-white/10 pt-2">
-                        <div className="flex justify-between">
-                          <span className="font-semibold text-white">Total</span>
-                          <span className="text-xl font-bold tabular-nums text-white">${(selectedEvent.price + 0.03).toFixed(2)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Trust signals */}
-                  <div className="mb-6 flex flex-wrap gap-2 text-xs">
-                    <div className="flex items-center gap-1.5 rounded-lg bg-white/[0.04] px-3 py-1.5 text-white/70">
-                      <Sparkles className="h-3 w-3" />
-                      Counterfeit-proof
-                    </div>
-                    <div className="flex items-center gap-1.5 rounded-lg bg-white/[0.04] px-3 py-1.5 text-white/70">
-                      <BadgeCheck className="h-3 w-3" />
-                      Instant settlement
-                    </div>
-                  </div>
-
-                  {/* CTA */}
-                  <button className="mt-auto w-full rounded-xl bg-[#4DA2FF] px-6 py-3.5 font-semibold text-white transition-all hover:bg-[#5DADFF] hover:shadow-lg hover:shadow-[#4DA2FF]/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4DA2FF] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a1929] active:scale-[0.98]">
-                    Purchase Ticket
-                  </button>
-                  <p className="mt-3 text-center text-xs text-white/50">
-                    Royalties enforced on every resale
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
+          <EventDetailSheet event={selectedEvent} onClose={() => setSelectedEvent(null)} />
         )}
       </AnimatePresence>
 
       <style>{`
-        .aurora-primary {
-          background: radial-gradient(circle, rgba(77,162,255,.32) 0%, transparent 62%);
-          filter: blur(76px);
-          animation: float 50s ease-in-out infinite;
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
         }
-        @keyframes float {
-          0%, 100% { transform: translate(0, 0); }
-          33% { transform: translate(2.5%, -1.8%); }
-          66% { transform: translate(-1.8%, 2.2%); }
-        }
-        .scale-103 {
-          transform: scale(1.03);
+        .shimmer-effect {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+          animation: shimmer 1.8s infinite;
         }
         @media (prefers-reduced-motion: reduce) {
-          .aurora-primary { animation: none !important; }
-          .proximity-glow { 
-            display: none !important; 
+          .ambient-orb,
+          .proximity-glow,
+          .glyph-pattern {
+            animation: none !important;
+            transform: none !important;
+            transition: none !important;
           }
-          * {
-            animation-duration: 0.01ms !important;
-            transition-duration: 0.01ms !important;
+          .shimmer-effect {
+            display: none;
           }
         }
       `}</style>
     </main>
   );
 }
+
+// Extract EventCard component for clarity
+function EventCard({ event, index, onClick }: { event: Event; index: number; onClick: () => void }) {
+  const availabilityPercent = (event.available / event.total) * 100;
+  const isLowStock = availabilityPercent < 15;
+  
+  return (
+    <motion.button
+      layout
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      transition={{ 
+        delay: 0.05 + index * 0.04, 
+        duration: 0.22,
+        layout: { type: 'spring', stiffness: 240, damping: 28 }
+      }}
+      onClick={onClick}
+      className="group relative overflow-hidden text-left transition-all focus:outline-none"
+      style={{
+        borderRadius: tokens.radius.lg,
+        border: `1px solid ${tokens.colors.border.default}`,
+        backgroundColor: tokens.colors.bg.card,
+        transition: `all ${tokens.motion.duration.base} ${tokens.motion.easing.default}`,
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-4px)';
+        e.currentTarget.style.borderColor = tokens.colors.border.hover;
+        e.currentTarget.style.backgroundColor = tokens.colors.bg.cardHover;
+        e.currentTarget.style.boxShadow = tokens.shadow[2];
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.borderColor = tokens.colors.border.default;
+        e.currentTarget.style.backgroundColor = tokens.colors.bg.card;
+        e.currentTarget.style.boxShadow = 'none';
+      }}
+      onFocus={(e) => {
+        e.currentTarget.style.outline = `2px solid ${tokens.colors.brand.primary}`;
+        e.currentTarget.style.outlineOffset = '2px';
+      }}
+      onBlur={(e) => {
+        e.currentTarget.style.outline = 'none';
+      }}
+    >
+      {/* Cover image */}
+      <div className="relative aspect-[16/9] overflow-hidden" style={{ background: `linear-gradient(135deg, ${tokens.colors.brand.primary}26 0%, ${tokens.colors.brand.secondary}1A 100%)` }}>
+        {event.coverImage ? (
+          <img 
+            src={event.coverImage} 
+            alt={event.title}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center" style={{ color: tokens.colors.text.muted, opacity: 0.3 }}>
+            <Calendar style={{ width: tokens.icon.empty, height: tokens.icon.empty }} />
+          </div>
+        )}
+        
+        {/* Date pill - top left */}
+        <div className="absolute left-3 top-3 backdrop-blur-sm" style={{
+          borderRadius: tokens.radius.md,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          padding: `${tokens.spacing.xs} 10px`,
+        }}>
+          <div style={{
+            fontSize: '10px',
+            fontWeight: 500,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            color: 'rgba(255, 255, 255, 0.8)',
+          }}>
+            {new Date(event.date).toLocaleDateString('en-US', { month: 'short' })}
+          </div>
+          <div style={{
+            fontFamily: 'monospace',
+            fontSize: '18px',
+            fontWeight: 700,
+            lineHeight: 1,
+            color: '#fff',
+          }}>
+            {new Date(event.date).getDate()}
+          </div>
+        </div>
+
+        {/* Badges - top right */}
+        <div className="absolute right-3 top-3 flex flex-col gap-1.5">
+          {event.verified && (
+            <div className="flex items-center gap-1 backdrop-blur-sm" style={{
+              borderRadius: tokens.radius.md,
+              backgroundColor: tokens.colors.status.verifiedBg,
+              padding: `4px ${tokens.spacing.xs}`,
+            }}>
+              <BadgeCheck style={{ width: '12px', height: '12px', color: tokens.colors.status.verified }} />
+              <span style={{ fontSize: '10px', fontWeight: 600, color: tokens.colors.status.verified }}>Verified</span>
+            </div>
+          )}
+          {event.trending && (
+            <div className="flex items-center gap-1 backdrop-blur-sm" style={{
+              borderRadius: tokens.radius.md,
+              backgroundColor: tokens.colors.status.hotBg,
+              padding: `4px ${tokens.spacing.xs}`,
+            }}>
+              <Sparkles style={{ width: '12px', height: '12px', color: tokens.colors.status.hot }} />
+              <span style={{ fontSize: '10px', fontWeight: 600, color: tokens.colors.status.hot }}>Hot</span>
+            </div>
+          )}
+        </div>
+
+        {/* Gradient overlay */}
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/60 to-transparent" />
+        
+        {/* Hover arrow */}
+        <div className="absolute bottom-3 right-3 flex items-center gap-1 text-white opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-1" style={{ fontSize: tokens.typography.micro.size, fontWeight: 500 }}>
+          <ArrowRight style={{ width: tokens.icon.inline, height: tokens.icon.inline }} />
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{ padding: tokens.spacing.md }}>
+        <h3 className="mb-2 line-clamp-1" style={{
+          fontSize: tokens.typography.h3.size,
+          lineHeight: tokens.typography.h3.lineHeight,
+          fontWeight: tokens.typography.h3.weight,
+          letterSpacing: tokens.typography.h3.letterSpacing,
+          color: tokens.colors.text.primary,
+        }}>
+          {event.title}
+        </h3>
+        
+        <div className="mb-3 space-y-1">
+          <div className="flex items-center gap-1.5" style={{ fontSize: tokens.typography.small.size, lineHeight: tokens.typography.small.lineHeight, color: tokens.colors.text.tertiary }}>
+            <MapPin className="flex-shrink-0" style={{ width: tokens.icon.inline, height: tokens.icon.inline }} />
+            <span className="line-clamp-1">{event.venue}, {event.city}</span>
+          </div>
+          <div className="flex items-center gap-1.5" style={{ fontSize: tokens.typography.small.size, lineHeight: tokens.typography.small.lineHeight, color: tokens.colors.text.tertiary }}>
+            <Calendar className="flex-shrink-0" style={{ width: tokens.icon.inline, height: tokens.icon.inline }} />
+            <span>
+              {new Date(event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} • {event.time}
+            </span>
+          </div>
+        </div>
+
+        {/* Meta row */}
+        <div className="flex items-end justify-between" style={{ paddingTop: tokens.spacing.xs }}>
+          <div>
+            <div style={{ fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: tokens.colors.text.muted }}>From</div>
+            <div style={{ fontSize: tokens.typography.h3.size, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: tokens.colors.text.primary }}>${event.price}</div>
+          </div>
+          <div className="text-right">
+            <div style={{ fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: tokens.colors.text.muted }}>
+              {isLowStock ? 'Low stock' : 'Available'}
+            </div>
+            <div style={{
+              fontSize: tokens.typography.small.size,
+              fontVariantNumeric: 'tabular-nums',
+              color: isLowStock ? tokens.colors.status.hot : tokens.colors.text.tertiary,
+              fontWeight: isLowStock ? 600 : 400,
+            }}>
+              {isLowStock && '⚡ '}
+              {event.available} / {event.total}
+            </div>
+            {isLowStock && (
+              <div className="mt-1 h-1 w-16 overflow-hidden" style={{ borderRadius: tokens.radius.full, backgroundColor: tokens.colors.bg.surface2 }}>
+                <div 
+                  className="h-full transition-all"
+                  style={{ width: `${availabilityPercent}%`, backgroundColor: tokens.colors.status.hot }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Hover CTA bar */}
+        <div className="mt-3 overflow-hidden opacity-0 transition-all duration-200 group-hover:opacity-100">
+          <div className="flex items-center justify-center gap-2" style={{
+            borderRadius: tokens.radius.md,
+            border: `1px solid ${tokens.colors.brand.primary}4D`,
+            backgroundColor: `${tokens.colors.brand.primary}1A`,
+            padding: '10px',
+            fontSize: tokens.typography.small.size,
+            fontWeight: 500,
+            color: tokens.colors.brand.primary,
+          }}>
+            View tickets
+            <ArrowRight style={{ width: tokens.icon.inline, height: tokens.icon.inline }} />
+          </div>
+        </div>
+      </div>
+    </motion.button>
+  );
+}
+
+// Extract EmptyState component
+function EmptyState({ onClear }: { onClear: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="mx-auto mt-16 max-w-md text-center"
+    >
+      <div className="mb-4" style={{ color: tokens.colors.text.muted, opacity: 0.5 }}>
+        <Search className="mx-auto" style={{ width: tokens.icon.empty, height: tokens.icon.empty }} />
+      </div>
+      <h3 className="mb-2" style={{ fontSize: tokens.typography.h3.size, fontWeight: 600, color: tokens.colors.text.primary }}>
+        No events match
+      </h3>
+      <p className="mb-6" style={{ fontSize: tokens.typography.small.size, color: tokens.colors.text.tertiary }}>
+        Try removing filters or broadening your search
+      </p>
+      <div className="flex justify-center gap-3">
+        <button
+          onClick={onClear}
+          className="transition-all"
+          style={{
+            borderRadius: tokens.radius.md,
+            backgroundColor: tokens.colors.bg.surface2,
+            padding: `10px ${tokens.spacing.lg}`,
+            fontSize: tokens.typography.small.size,
+            fontWeight: 500,
+            color: tokens.colors.text.secondary,
+            transition: `all ${tokens.motion.duration.fast} ${tokens.motion.easing.default}`,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = tokens.colors.bg.surface3;
+            e.currentTarget.style.transform = 'scale(1.02)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = tokens.colors.bg.surface2;
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          Clear filters
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+// Extract EventDetailSheet component
+function EventDetailSheet({ event, onClose }: { event: Event; onClose: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-end justify-center p-4 backdrop-blur-sm md:items-center"
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 20, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 12, scale: 0.98 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-3xl overflow-hidden"
+        style={{
+          borderRadius: tokens.radius.xl,
+          border: `1px solid ${tokens.colors.border.default}`,
+          backgroundColor: '#0a1929',
+          boxShadow: tokens.shadow[3],
+        }}
+      >
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 z-10 backdrop-blur-sm transition-all focus:outline-none"
+          style={{
+            borderRadius: tokens.radius.md,
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            padding: tokens.spacing.xs,
+            color: 'rgba(255, 255, 255, 0.8)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+            e.currentTarget.style.color = '#fff';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.4)';
+            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
+          }}
+        >
+          <X style={{ width: tokens.icon.button, height: tokens.icon.button }} />
+        </button>
