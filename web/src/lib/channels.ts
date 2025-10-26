@@ -64,8 +64,6 @@ export function getDefaultChannelConfigs(): ChannelConfigs {
   return configs;
 }
 
-import { getClient } from './rpc';
-
 /**
  * Sales Channels Management
  * Enables and manages public sales channels for ticket listings

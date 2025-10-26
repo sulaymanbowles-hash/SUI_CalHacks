@@ -168,7 +168,7 @@ export default function CreateEvent() {
           name: 'General Admission',
           color: '#4DA2FF',
           supply: parseInt(supply),
-          priceMist,
+          priceMist: Number(toMist(parseFloat(price))),
         },
       ];
 
