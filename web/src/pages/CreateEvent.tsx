@@ -270,14 +270,18 @@ export default function CreateEvent() {
   };
 
   const handleViewEvent = () => {
-    navigate('/events');
+    // Open the Event object in Sui Explorer
+    if (eventData.eventId) {
+      window.open(getExplorerObjectUrl(eventData.eventId), '_blank');
+    }
   };
 
   const handleOpenScanner = () => {
     if (eventData.gateKeeperCapId) {
-      navigate(`/scanner?cap=${eventData.gateKeeperCapId}`);
+      // Navigate to check-in page with the capability
+      navigate(`/checkin?cap=${eventData.gateKeeperCapId}`);
     } else {
-      navigate('/scanner');
+      navigate('/checkin');
     }
   };
 
@@ -575,58 +579,253 @@ export default function CreateEvent() {
 
               {/* Success Card */}
               {publishSuccess && eventData.eventId && (
-                <div className="mb-6 p-6 bg-green-500/10 border border-green-500/30 rounded-xl">
-                  <div className="text-center mb-4">
-                    <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center mx-auto mb-3">
-                      <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
+                <div className="mb-6 space-y-4">
+                  {/* Success Header */}
+                  <div className="p-6 bg-green-500/10 border border-green-500/30 rounded-xl">
+                    <div className="text-center mb-4">
+                      <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center mx-auto mb-3">
+                        <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <h4 className="text-lg font-semibold text-white mb-1">Event Published!</h4>
+                      <p className="text-sm text-white/60">Your event is now live and ready for ticket sales</p>
                     </div>
-                    <h4 className="text-lg font-semibold text-white mb-1">Event Published!</h4>
-                    <p className="text-sm text-white/60">Your event is now live and ready for ticket sales</p>
+
+                    <div className="space-y-3">
+                      <Button
+                        onClick={handleViewEvent}
+                        variant="primary"
+                        fullWidth
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        View on Sui Explorer
+                      </Button>
+                      
+                      <button
+                        onClick={() => {
+                          if (eventData.publicUrl) {
+                            navigator.clipboard.writeText(eventData.publicUrl);
+                            alert('Ticket link copied! Share this with your buyers.');
+                          }
+                        }}
+                        className="w-full rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-white/80 transition-colors hover:bg-white/10 flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Copy Ticket Purchase Link
+                      </button>
+
+                      <button
+                        onClick={() => navigate('/')}
+                        className="w-full rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-white/60 transition-colors hover:bg-white/10 flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                        Go to Home
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                    <Button
-                      onClick={handleViewEvent}
-                      variant="primary"
-                      fullWidth
-                    >
-                      View Event
-                    </Button>
-                    <Button
-                      onClick={handleOpenScanner}
-                      variant="secondary"
-                      fullWidth
-                    >
-                      Open Scanner
-                    </Button>
-                  </div>
-
-                  {eventData.createDigest && (
-                    <a
-                      href={getExplorerObjectUrl(eventData.createDigest)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 p-3 transition-colors hover:bg-white/10"
-                    >
-                      <span className="text-sm text-white/80">View Transaction</span>
-                      <span className="text-xs text-white/40 font-mono group-hover:text-white/60 transition-colors">
-                        {shortenAddress(eventData.createDigest)}
-                      </span>
-                      <svg className="w-4 h-4 text-white/40 group-hover:text-white/60 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  {/* Explorer Links Section */}
+                  <div className="p-6 bg-white/5 border border-white/10 rounded-xl">
+                    <div className="flex items-center gap-2 mb-4">
+                      <svg className="w-5 h-5 text-primary-main" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
-                    </a>
-                  )}
+                      <h5 className="text-sm font-semibold text-white">Sui Explorer Links</h5>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {/* Transaction Link */}
+                      {eventData.createDigest && (
+                        <a
+                          href={getExplorerTxUrl(eventData.createDigest)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-center justify-between p-3 rounded-lg border border-white/10 bg-white/5 transition-colors hover:bg-white/10"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                              <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-white">Creation Transaction</div>
+                              <div className="text-xs text-white/40 font-mono">{shortenAddress(eventData.createDigest)}</div>
+                            </div>
+                          </div>
+                          <svg className="w-4 h-4 text-white/40 group-hover:text-white/60 transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </a>
+                      )}
 
+                      {/* Event Object Link */}
+                      {eventData.eventId && (
+                        <a
+                          href={getExplorerObjectUrl(eventData.eventId)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-center justify-between p-3 rounded-lg border border-white/10 bg-white/5 transition-colors hover:bg-white/10"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                              <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-white">Event Object</div>
+                              <div className="text-xs text-white/40 font-mono">{shortenAddress(eventData.eventId)}</div>
+                            </div>
+                          </div>
+                          <svg className="w-4 h-4 text-white/40 group-hover:text-white/60 transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      )}
+
+                      {/* GateKeeperCap Link */}
+                      {eventData.gateKeeperCapId && (
+                        <a
+                          href={getExplorerObjectUrl(eventData.gateKeeperCapId)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-center justify-between p-3 rounded-lg border border-white/10 bg-white/5 transition-colors hover:bg-white/10"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                              <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-white">GateKeeper Capability</div>
+                              <div className="text-xs text-white/40 font-mono">{shortenAddress(eventData.gateKeeperCapId)}</div>
+                            </div>
+                          </div>
+                          <svg className="w-4 h-4 text-white/40 group-hover:text-white/60 transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      )}
+
+                      {/* EventCap Link */}
+                      {eventData.eventCapId && (
+                        <a
+                          href={getExplorerObjectUrl(eventData.eventCapId)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-center justify-between p-3 rounded-lg border border-white/10 bg-white/5 transition-colors hover:bg-white/10"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center">
+                              <svg className="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-white">Event Capability</div>
+                              <div className="text-xs text-white/40 font-mono">{shortenAddress(eventData.eventCapId)}</div>
+                            </div>
+                          </div>
+                          <svg className="w-4 h-4 text-white/40 group-hover:text-white/60 transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      )}
+
+                      {/* Kiosk Link */}
+                      {eventData.kioskId && (
+                        <a
+                          href={getExplorerObjectUrl(eventData.kioskId)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-center justify-between p-3 rounded-lg border border-white/10 bg-white/5 transition-colors hover:bg-white/10"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                              <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-white">Kiosk (Marketplace)</div>
+                              <div className="text-xs text-white/40 font-mono">{shortenAddress(eventData.kioskId)}</div>
+                            </div>
+                          </div>
+                          <svg className="w-4 h-4 text-white/40 group-hover:text-white/60 transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      )}
+
+                      {/* Ticket Classes */}
+                      {eventData.ticketClasses && eventData.ticketClasses.map((ticketClass, idx) => (
+                        <a
+                          key={ticketClass.classId}
+                          href={getExplorerObjectUrl(ticketClass.classId)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-center justify-between p-3 rounded-lg border border-white/10 bg-white/5 transition-colors hover:bg-white/10"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-pink-500/20 flex items-center justify-center">
+                              <svg className="w-4 h-4 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-white">Ticket Class: {ticketClass.name}</div>
+                              <div className="text-xs text-white/40 font-mono">{shortenAddress(ticketClass.classId)}</div>
+                            </div>
+                          </div>
+                          <svg className="w-4 h-4 text-white/40 group-hover:text-white/60 transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      ))}
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-white/10">
+                      <p className="text-xs text-white/40 text-center">
+                        Click any link to view on Sui Explorer
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Copy Link Button */}
                   {eventData.publicUrl && (
-                    <button
-                      onClick={handleCopyLink}
-                      className="mt-3 w-full rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-white/80 transition-colors hover:bg-white/10"
-                    >
-                      Copy Public Link
-                    </button>
+                    <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+                      <div className="flex items-start gap-3 mb-3">
+                        <svg className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div>
+                          <p className="text-sm font-medium text-white mb-1">Share Your Event</p>
+                          <p className="text-xs text-white/60">Copy this link and share it with potential buyers to start selling tickets!</p>
+                        </div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-3 mb-3 border border-white/10">
+                        <p className="text-xs text-white/60 mb-1">Public Ticket Purchase URL:</p>
+                        <p className="text-xs text-white/80 font-mono break-all">{eventData.publicUrl}</p>
+                      </div>
+                      <button
+                        onClick={handleCopyLink}
+                        className="w-full rounded-lg bg-blue-500 hover:bg-blue-600 p-3 text-sm text-white font-medium transition-colors flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Copy Link to Clipboard
+                      </button>
+                    </div>
                   )}
                 </div>
               )}

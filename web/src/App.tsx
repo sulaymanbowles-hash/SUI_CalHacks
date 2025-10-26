@@ -11,6 +11,7 @@ import { Collections } from './pages/Collections';
 import { CheckIn } from './pages/CheckIn';
 import { AuthCallback } from './pages/AuthCallback';
 import { Events } from './pages/Events';
+import CreateEvent from './pages/CreateEvent';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 
@@ -35,6 +36,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/events" element={<Events />} />
+                <Route path="/create" element={<CreateEvent />} />
                 <Route path="/my-tickets" element={<MyTickets />} />
                 <Route path="/collections" element={<Collections />} />
                 <Route path="/console" element={<AppConsole />} />
