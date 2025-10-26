@@ -5,6 +5,8 @@ module ticket::event {
     use sui::tx_context::TxContext;
     use sui::transfer;
     use sui::dynamic_field as df;
+    use ticket::payouts::{Self, Payouts, Recipient};
+    use ticket::channel::{Self, Channel};
 
     /// Invalid time window (starts_at must be before ends_at)
     const E_INVALID_WINDOW: u64 = 1;
@@ -100,6 +102,102 @@ module ticket::event {
             event_id,
         };
         
+        transfer::transfer(event, ctx.sender());
+        transfer::transfer(gate_cap, ctx.sender());
+        transfer::transfer(event_cap, ctx.sender());
+    }
+
+    /// Create event with payouts and channel atomically
+    /// This ensures the event is immediately publishable after creation
+    public entry fun new_with_setup(
+        // Event params
+        name: String,
+        location: String,
+        starts_at: u64,
+        ends_at: u64,
+        poster_cid: String,
+        supply_total: u64,
+        // Payout params
+        recipient_addresses: vector<address>,
+        recipient_bps: vector<u16>,
+        // Channel params
+        channel_kind: u8,
+        price_mist: u64,
+        channel_start_ts: u64,
+        channel_end_ts: u64,
+        per_wallet_limit: u16,
+        channel_cap: u64,
+        ctx: &mut TxContext
+    ) {
+        assert!(starts_at < ends_at, E_INVALID_WINDOW);
+        
+        // Create event
+        let event_uid = object::new(ctx);
+        let event_id = object::uid_to_inner(&event_uid);
+        
+        let mut event = Event {
+            id: event_uid,
+            organizer: ctx.sender(),
+            name,
+            location,
+            starts_at,
+            ends_at,
+            poster_cid,
+            status: STATUS_DRAFT,
+            supply_total,
+            supply_sold: 0,
+        };
+        
+        // Create payouts
+        let len = recipient_addresses.length();
+        assert!(len == recipient_bps.length(), E_PAYOUTS_REQUIRED);
+        
+        let mut recipients = vector::empty<Recipient>();
+        let mut i = 0;
+        while (i < len) {
+            recipients.push_back(payouts::new_recipient(
+                *recipient_addresses.borrow(i),
+                *recipient_bps.borrow(i)
+            ));
+            i = i + 1;
+        };
+        
+        let payouts_obj = payouts::new(event_id, recipients, ctx);
+        let payouts_id = object::id(&payouts_obj);
+        
+        // Register payouts with event
+        df::add(&mut event.id, KEY_PAYOUTS_ID, payouts_id);
+        
+        // Create and activate channel
+        let mut channel = channel::new(
+            event_id,
+            channel_kind,
+            price_mist,
+            channel_start_ts,
+            channel_end_ts,
+            per_wallet_limit,
+            channel_cap,
+            ctx
+        );
+        channel::set_active(&mut channel, true);
+        
+        // Register channel count
+        df::add(&mut event.id, KEY_CHANNEL_COUNT, 1u64);
+        
+        // Create capabilities
+        let gate_cap = GateKeeperCap {
+            id: object::new(ctx),
+            event_id,
+        };
+        
+        let event_cap = EventCap {
+            id: object::new(ctx),
+            event_id,
+        };
+        
+        // Share/transfer objects
+        transfer::public_share_object(payouts_obj);
+        transfer::public_share_object(channel);
         transfer::transfer(event, ctx.sender());
         transfer::transfer(gate_cap, ctx.sender());
         transfer::transfer(event_cap, ctx.sender());

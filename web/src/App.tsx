@@ -10,6 +10,8 @@ import { MyTickets } from './pages/MyTickets';
 import { CheckIn } from './pages/CheckIn';
 import { AuthCallback } from './pages/AuthCallback';
 import { Events } from './pages/Events';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
 
 // Configure Sui network
 const { networkConfig } = createNetworkConfig({
@@ -36,6 +38,8 @@ function App() {
                 <Route path="/console" element={<AppConsole />} />
                 <Route path="/checkin" element={<CheckIn />} />
                 <Route path="/auth" element={<AuthCallback />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
               </Routes>
             </div>
           </BrowserRouter>

@@ -2,7 +2,10 @@
  * Sui client utilities and type helpers
  */
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
-import { NETWORK, PACKAGE_ID } from './env';
+import { NETWORK, PACKAGE_ID as ENV_PACKAGE_ID } from './env';
+
+// Re-export PACKAGE_ID for convenience
+export const PACKAGE_ID = ENV_PACKAGE_ID;
 
 /**
  * Get a configured Sui client for testnet
@@ -104,4 +107,57 @@ export function parseMoveError(error: any): string {
   }
   
   return errorStr;
+}
+
+/**
+ * Check wallet balance (in SUI)
+ */
+export async function getWalletBalance(address: string): Promise<string> {
+  const client = getClient();
+  const balance = await client.getBalance({ owner: address });
+  return formatSui(balance.totalBalance);
+}
+
+/**
+ * Check if wallet has sufficient balance for transaction
+ */
+export async function hasGasCoins(address: string, minSui: number = 0.1): Promise<boolean> {
+  try {
+    const balance = await getWalletBalance(address);
+    return parseFloat(balance) >= minSui;
+  } catch (error) {
+    console.error('Failed to check balance:', error);
+    return false;
+  }
+}
+
+/**
+ * Request testnet SUI from faucet
+ */
+export async function requestTestnetSui(address: string): Promise<boolean> {
+  try {
+    const response = await fetch('https://faucet.testnet.sui.io/v1/gas', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        FixedAmountRequest: {
+          recipient: address,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Faucet request failed:', await response.text());
+      return false;
+    }
+
+    const data = await response.json();
+    console.log('✓ Testnet SUI requested:', data);
+    return true;
+  } catch (error) {
+    console.error('Faucet error:', error);
+    return false;
+  }
 }

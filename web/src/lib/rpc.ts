@@ -1,5 +1,8 @@
 import { getClient, getTicketType } from './sui';
 
+// Re-export getClient for convenience
+export { getClient } from './sui';
+
 /**
  * Simple RPC helper to fetch an object by ID
  */

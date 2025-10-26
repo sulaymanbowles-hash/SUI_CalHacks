@@ -10,7 +10,7 @@ export const NETWORK = 'testnet' as const;
 // Package and Policy IDs (deployed on testnet)
 export const PACKAGE_ID = 
   import.meta.env.VITE_PACKAGE_ID || 
-  '0x15ac55e21409bf56cd3f93552a85c716330b07af4fdbd3b4996085cc59e15769';
+  '0xbab930f22032026668a650f16bd23e594bc8c69c8e86c4b2ec495dc02f93bbcf';
 
 export const POLICY_ID = 
   import.meta.env.VITE_POLICY_ID || 

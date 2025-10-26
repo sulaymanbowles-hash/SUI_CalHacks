@@ -36,6 +36,11 @@ module ticket::payouts {
         total_bps: u16,
     }
 
+    /// Create a new recipient
+    public fun new_recipient(to: address, bps: u16): Recipient {
+        Recipient { to, bps }
+    }
+
     /// Create or update payouts configuration
     /// - event_id: ID of the event these payouts apply to
     /// - recipients: Vector of (address, bps) pairs

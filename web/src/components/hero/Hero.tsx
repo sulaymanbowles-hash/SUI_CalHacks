@@ -1,4 +1,5 @@
-import SuiHeroBackdrop from "./SuiHeroBackdrop";
+import FlowingWaterBackground from "./FlowingWaterBackground";
+import TypedHeadline from "./TypedHeadline";
 import BuiltOnSuiChip from "./BuiltOnSuiChip";
 import BrandWatermark from "./BrandWatermark";
 import { Link } from "react-router-dom";
@@ -6,102 +7,98 @@ import { useEffect, useState, useRef } from "react";
 
 export default function Hero() {
   const [scrollY, setScrollY] = useState(0);
-  const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
   const [hoveredCard, setHoveredCard] = useState<'left' | 'right' | null>(null);
-  const [hasHoveredLeft, setHasHoveredLeft] = useState(false);
-  const [hasHoveredRight, setHasHoveredRight] = useState(false);
+  const [scrolledPastHero, setScrolledPastHero] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!heroRef.current) return;
-      const rect = heroRef.current.getBoundingClientRect();
-      setMousePos({
-        x: e.clientX / window.innerWidth,
-        y: e.clientY / window.innerHeight,
-      });
+    const handleScroll = () => {
+      const scroll = window.scrollY;
+      setScrollY(scroll);
+      
+      // Check if scrolled past hero for benefits bar fade
+      if (heroRef.current) {
+        const heroBottom = heroRef.current.offsetHeight;
+        setScrolledPastHero(scroll > heroBottom);
+      }
     };
 
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!prefersReducedMotion) {
-      window.addEventListener('scroll', handleScroll, { passive: true });
-      window.addEventListener('mousemove', handleMouseMove, { passive: true });
-    }
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('mousemove', handleMouseMove);
-    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const parallaxY = scrollY * 0.015;
-  const tiltX = (mousePos.y - 0.5) * 0.4;
-  const tiltY = (mousePos.x - 0.5) * -0.4;
+  const benefitsOpacity = scrolledPastHero ? 0 : Math.max(0, 1 - scrollY / 400);
 
   return (
-    <section ref={heroRef} className="relative overflow-hidden">
-      <SuiHeroBackdrop />
-      <BrandWatermark />
+    <section ref={heroRef} className="relative min-h-screen overflow-hidden">
+      {/* Flowing Water Background */}
+      <div className="absolute inset-0 z-0">
+        <FlowingWaterBackground paused={false} />
+      </div>
 
-      <div className="mx-auto max-w-screen-xl px-6 py-[96px] md:py-[112px]">
+      {/* Brand watermark */}
+      <div className="relative z-10">
+        <BrandWatermark />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-screen-xl px-6 py-[96px] md:py-[112px] overflow-hidden">
+        {/* Built on Sui pill with micro-gloss */}
         <BuiltOnSuiChip />
 
-        {/* Heading - improved rhythm, no hover effects */}
-        <h1 
-          className="mx-auto mt-8 max-w-[16ch] text-center font-semibold leading-[1.06] tracking-[-0.015em] text-white
-                     text-[40px] sm:text-[56px] md:text-[64px]"
-          style={{
-            transform: `translateY(${parallaxY}px)`,
-            transition: 'transform 0.08s ease-out',
-          }}
-        >
-          Tickets that pay
-          <br className="hidden sm:block" />
-          creators on every resale
-        </h1>
+        {/* Headline with subtle vignette for legibility */}
+        <div className="relative mx-auto mt-6 w-full max-w-[min(90vw,800px)]">
+          {/* Text vignette */}
+          <div 
+            className="absolute inset-0 -m-8 rounded-full blur-3xl pointer-events-none"
+            style={{
+              background: 'radial-gradient(circle at center, rgba(0, 0, 0, 0.4) 0%, transparent 70%)',
+              opacity: 0.7,
+            }}
+            aria-hidden="true"
+          />
+          
+          <TypedHeadline
+            lines={[
+              "Tickets that pay",
+              "creators on every",
+              "resale"
+            ]}
+            className="relative text-center font-semibold text-white text-[clamp(32px,8vw,64px)] px-4"
+          />
+        </div>
 
-        {/* Subhead - tighter spacing */}
-        <p className="mx-auto mt-5 max-w-[64ch] text-center text-[16.5px] leading-[1.6] text-white/72">
+        {/* Subhead - tighter spacing (12px = mt-3) */}
+        <p className="mx-auto mt-3 max-w-[64ch] px-4 text-center text-[16.5px] leading-[1.6] text-white/85">
           Own your ticket and list it in seconds. On resale, creators and organizers are paid automatically.
         </p>
 
-        {/* Persona lanes - fluid micro-interactions */}
+        {/* Persona lanes - breathing room (48-56px = mt-12-14) */}
         <div className="mx-auto mt-14 grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2">
-          {/* Left card */}
+          {/* Left card - Buyer */}
           <Link 
-            to="/app" 
-            className="card-lane group relative rounded-[14px] border border-white/11 bg-white/[0.02] p-6
+            to="/events" 
+            className="card-lane group relative block rounded-[14px] border border-white/11 bg-white/[0.02] p-6 backdrop-blur-sm
                        focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4DA2FF]/90 focus-visible:ring-offset-2 focus-visible:ring-offset-[#061522]"
             style={{
-              transform: hoveredCard === 'left' 
-                ? `perspective(1000px) rotateX(${tiltX * 0.5}deg) rotateY(${tiltY * 0.5}deg) translateY(-2px)`
-                : `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`,
+              transform: hoveredCard === 'left' ? 'translateY(-2px) scale(1.01)' : 'translateY(0) scale(1)',
               boxShadow: hoveredCard === 'left' 
-                ? '0 12px 32px rgba(3,15,28,.16), 0 0 48px rgba(77,162,255,.12)'
+                ? '0 12px 32px rgba(3,15,28,.16), 0 0 48px rgba(77,162,255,.12), inset 0 0 0 1px rgba(90,224,229,0.2)'
                 : '0 8px 24px rgba(3,15,28,.12)',
               transition: 'transform 0.18s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.22s ease-out',
             }}
-            onMouseEnter={() => {
-              setHoveredCard('left');
-              if (!hasHoveredLeft) setHasHoveredLeft(true);
-            }}
+            onMouseEnter={() => setHoveredCard('left')}
             onMouseLeave={() => setHoveredCard(null)}
           >
-            {/* Inner stroke - subtler than outer */}
-            <div className="pointer-events-none absolute inset-0 rounded-[14px] ring-1 ring-inset ring-white/[0.025]" />
-            
-            {/* Specular highlight - increases on hover */}
+            {/* Moving light from water shader */}
             <div 
-              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/8 to-transparent transition-opacity duration-200"
+              className="pointer-events-none absolute inset-0 rounded-[14px] bg-gradient-to-br from-[#4DA2FF]/[0.08] via-transparent to-transparent opacity-0 transition-opacity duration-300"
               style={{ opacity: hoveredCard === 'left' ? 1 : 0 }}
+              aria-hidden="true"
             />
             
+            {/* Role badge */}
             <div className="mb-4 flex items-center gap-2.5 text-white/80">
-              <span 
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.08] transition-colors duration-200"
-                style={{ backgroundColor: hoveredCard === 'left' ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.08)' }}
-              >
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.08]">
                 <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
                 </svg>
@@ -109,79 +106,45 @@ export default function Hero() {
               <span className="text-[13px]">I'm here to go to a show</span>
             </div>
             
-            <h3 className="mb-3 text-[22px] font-medium leading-[1.2] text-white">Find a show</h3>
+            <h3 className="relative mb-3 text-[22px] font-medium leading-[1.2] text-white">Browse events</h3>
             
-            <p className="mb-5 max-w-[42ch] text-[15px] leading-[1.6] text-white/70">
-              Purchase tickets and resell if plans change. No screenshots—real ownership.
+            <p className="relative mb-5 line-clamp-2 max-w-[42ch] text-[15px] leading-[1.6] text-white/70">
+              Purchase and resell if plans change. Real ownership verified on-chain.
             </p>
             
-            <div className="flex items-center gap-4">
-              <button 
-                className="btn-primary group/btn relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-[#4DA2FF] px-5 py-2.5 text-[14px] font-medium text-white shadow-[0_2px_8px_rgba(77,162,255,0.24)] transition-all duration-200 hover:bg-[#5DADFF] hover:shadow-[0_4px_12px_rgba(77,162,255,0.32)] hover:scale-[1.015] active:scale-[0.98]"
-                style={{
-                  transform: hoveredCard === 'left' ? 'translateY(-1px)' : 'translateY(0)',
-                }}
-              >
-                {/* Diagonal sheen - sweeps once on first hover */}
-                <div 
-                  className={`pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent ${hasHoveredLeft ? 'animate-sheen-once' : ''}`}
-                  style={{
-                    transform: 'translateX(-100%) skewX(-15deg)',
-                    width: '200%',
-                  }}
-                />
-                <span className="relative">Browse events</span>
-                <svg 
-                  className="relative h-3.5 w-3.5 transition-transform duration-120"
-                  style={{
-                    transform: hoveredCard === 'left' ? 'translateX(6px)' : 'translateX(0)',
-                  }}
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor" 
-                  strokeWidth={2.5}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </button>
-              <a href="#how" className="text-[13px] text-white/60 underline decoration-white/20 underline-offset-2 transition-colors duration-200 hover:text-white/90 hover:decoration-white/40">
-                How resale works
+            <div className="relative mt-auto flex items-center justify-between text-white/60">
+              <span className="text-[13px]">Explore →</span>
+              <a href="#how" className="text-[13px] underline decoration-white/20 underline-offset-2 hover:text-white/90">
+                How it works
               </a>
             </div>
           </Link>
 
-          {/* Right card */}
+          {/* Right card - Organizer */}
           <Link 
             to="/console" 
-            className="card-lane group relative rounded-[14px] border border-white/11 bg-white/[0.02] p-6
+            className="card-lane group relative block rounded-[14px] border border-white/11 bg-white/[0.02] p-6 backdrop-blur-sm
                        focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4DA2FF]/90 focus-visible:ring-offset-2 focus-visible:ring-offset-[#061522]"
             style={{
-              transform: hoveredCard === 'right'
-                ? `perspective(1000px) rotateX(${tiltX * 0.5}deg) rotateY(${tiltY * 0.5}deg) translateY(-2px)`
-                : `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`,
+              transform: hoveredCard === 'right' ? 'translateY(-2px) scale(1.01)' : 'translateY(0) scale(1)',
               boxShadow: hoveredCard === 'right'
-                ? '0 12px 32px rgba(3,15,28,.16), 0 0 48px rgba(90,224,229,.12)'
+                ? '0 12px 32px rgba(3,15,28,.16), 0 0 48px rgba(90,224,229,.12), inset 0 0 0 1px rgba(90,224,229,0.2)'
                 : '0 8px 24px rgba(3,15,28,.12)',
               transition: 'transform 0.18s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.22s ease-out',
             }}
-            onMouseEnter={() => {
-              setHoveredCard('right');
-              if (!hasHoveredRight) setHasHoveredRight(true);
-            }}
+            onMouseEnter={() => setHoveredCard('right')}
             onMouseLeave={() => setHoveredCard(null)}
           >
-            <div className="pointer-events-none absolute inset-0 rounded-[14px] ring-1 ring-inset ring-white/[0.025]" />
-            
+            {/* Moving light from water shader */}
             <div 
-              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/8 to-transparent transition-opacity duration-200"
+              className="pointer-events-none absolute inset-0 rounded-[14px] bg-gradient-to-br from-[#5AE0E5]/[0.08] via-transparent to-transparent opacity-0 transition-opacity duration-300"
               style={{ opacity: hoveredCard === 'right' ? 1 : 0 }}
+              aria-hidden="true"
             />
             
+            {/* Role badge */}
             <div className="mb-4 flex items-center gap-2.5 text-white/80">
-              <span 
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.08] transition-colors duration-200"
-                style={{ backgroundColor: hoveredCard === 'right' ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.08)' }}
-              >
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.08]">
                 <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                 </svg>
@@ -189,73 +152,50 @@ export default function Hero() {
               <span className="text-[13px]">I'm running a show</span>
             </div>
             
-            <h3 className="mb-3 text-[22px] font-medium leading-[1.2] text-white">Run your event</h3>
+            <h3 className="relative mb-3 text-[22px] font-medium leading-[1.2] text-white">Start as organizer</h3>
             
-            <p className="mb-5 max-w-[42ch] text-[15px] leading-[1.6] text-white/70">
-              Create events, mint tickets, and scan at the door. Royalties split automatically on every resale.
+            <p className="relative mb-5 line-clamp-2 max-w-[42ch] text-[15px] leading-[1.6] text-white/70">
+              Create events, mint tickets, and scan at the door. Royalties split automatically.
             </p>
             
-            <div className="flex items-center gap-4">
-              <button 
-                className="btn-primary group/btn relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-[#4DA2FF] px-5 py-2.5 text-[14px] font-medium text-white shadow-[0_2px_8px_rgba(77,162,255,0.24)] transition-all duration-200 hover:bg-[#5DADFF] hover:shadow-[0_4px_12px_rgba(77,162,255,0.32)] hover:scale-[1.015] active:scale-[0.98]"
-                style={{
-                  transform: hoveredCard === 'right' ? 'translateY(-1px)' : 'translateY(0)',
-                }}
-              >
-                <div 
-                  className={`pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent ${hasHoveredRight ? 'animate-sheen-once' : ''}`}
-                  style={{
-                    transform: 'translateX(-100%) skewX(-15deg)',
-                    width: '200%',
-                  }}
-                />
-                <span className="relative">Get started</span>
-                <svg 
-                  className="relative h-3.5 w-3.5 transition-transform duration-120"
-                  style={{
-                    transform: hoveredCard === 'right' ? 'translateX(6px)' : 'translateX(0)',
-                  }}
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor" 
-                  strokeWidth={2.5}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </button>
-              <Link to="/checkin" className="text-[13px] text-white/60 underline decoration-white/20 underline-offset-2 transition-colors duration-200 hover:text-white/90 hover:decoration-white/40">
-                Scan at the door
+            <div className="relative mt-auto flex items-center justify-between text-white/60">
+              <span className="text-[13px]">Get started →</span>
+              <Link to="/checkin" className="text-[13px] underline decoration-white/20 underline-offset-2 hover:text-white/90">
+                Scan tickets
               </Link>
             </div>
           </Link>
         </div>
 
-        {/* Trust row - enhanced with monochrome icons */}
-        <div className="mx-auto mt-8 flex max-w-[72ch] flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[14.5px] text-white/78">
+        {/* Sticky benefits bar (fades on scroll) */}
+        <div 
+          className="mx-auto mt-8 flex max-w-[72ch] flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[14.5px] text-white/85 transition-opacity duration-300"
+          style={{ opacity: benefitsOpacity }}
+        >
           <span className="inline-flex items-center gap-1.5">
             <svg className="h-[15px] w-[15px] text-green-400/90" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
             </svg>
-            Verified organizers
+            <span className="max-w-[24ch]">Verified organizers</span>
           </span>
           <span className="text-white/25">•</span>
           <span className="inline-flex items-center gap-1.5">
             <svg className="h-[15px] w-[15px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
             </svg>
-            0% platform fees
+            <span className="max-w-[24ch]">0% platform fees</span>
           </span>
           <span className="text-white/25">•</span>
           <span className="inline-flex items-center gap-1.5">
             <svg className="h-[15px] w-[15px] text-yellow-400/90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            Instant transfers
+            <span className="max-w-[24ch]">Instant transfers</span>
           </span>
         </div>
 
-        {/* Scroll hint */}
-        <div className="mt-12 flex justify-center">
+        {/* Scroll hint with breathing animation */}
+        <div className="mt-12 flex justify-center" style={{ opacity: benefitsOpacity }}>
           <div className="animate-bounce-soft">
             <svg className="h-5 w-5 text-white/28" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -264,7 +204,8 @@ export default function Hero() {
         </div>
       </div>
 
-      <style jsx>{`
+      {/* Animation keyframes */}
+      <style dangerouslySetInnerHTML={{__html: `
         @keyframes bounce-soft {
           0%, 100% { transform: translateY(0); opacity: 0.28; }
           50% { transform: translateY(5px); opacity: 0.48; }
@@ -273,21 +214,12 @@ export default function Hero() {
           animation: bounce-soft 2.8s ease-in-out infinite;
         }
         
-        @keyframes sheen-once {
-          0% { transform: translateX(-100%) skewX(-15deg); }
-          100% { transform: translateX(100%) skewX(-15deg); }
-        }
-        .animate-sheen-once {
-          animation: sheen-once 0.7s ease-out forwards;
-        }
-        
         @media (prefers-reduced-motion: reduce) {
-          .animate-bounce-soft,
-          .animate-sheen-once {
+          .animate-bounce-soft {
             animation: none !important;
           }
         }
-      `}</style>
+      `}} />
     </section>
   );
 }

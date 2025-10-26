@@ -406,6 +406,7 @@ export function MyTickets() {
                       // TODO: Integrate with Apple/Google Wallet
                       alert('Add to Wallet integration coming soon');
                     }}
+                    aria-label="Add to Wallet"
                     className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
                   >
                     <Wallet className="h-4 w-4" />
@@ -440,6 +441,7 @@ export function MyTickets() {
                         img.src = url;
                       }
                     }}
+                    aria-label="Download QR code"
                     className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
                   >
                     <Download className="h-4 w-4" />
@@ -482,6 +484,7 @@ export function MyTickets() {
                     </h3>
                     <button
                       onClick={() => setShowListSheet(null)}
+                      aria-label="Close listing sheet"
                       className="rounded-lg p-2 text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white"
                     >
                       <X className="h-5 w-5" />
@@ -558,6 +561,7 @@ export function MyTickets() {
                             setListings(listings.filter(l => l.ticketId !== showListSheet));
                             setShowListSheet(null);
                           }}
+                          aria-label="Unlist ticket"
                           className="flex-1 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 font-medium text-red-400 transition-colors hover:bg-red-500/20"
                         >
                           Unlist
@@ -569,6 +573,7 @@ export function MyTickets() {
                             ));
                             setShowListSheet(null);
                           }}
+                          aria-label="Update listing price"
                           className="flex-1 rounded-xl bg-[#4DA2FF] px-4 py-3 font-semibold text-white transition-all hover:bg-[#5DADFF] active:scale-[0.98]"
                         >
                           Update price
@@ -578,12 +583,14 @@ export function MyTickets() {
                       <>
                         <button
                           onClick={() => setShowListSheet(null)}
+                          aria-label="Cancel listing"
                           className="flex-1 rounded-xl border border-white/12 bg-white/[0.02] px-4 py-3 font-medium text-white/80 transition-colors hover:bg-white/[0.06]"
                         >
                           Cancel
                         </button>
                         <button
                           onClick={() => handleListForSale(showListSheet)}
+                          aria-label="List ticket for sale"
                           className="flex-1 rounded-xl bg-[#4DA2FF] px-4 py-3 font-semibold text-white transition-all hover:bg-[#5DADFF] active:scale-[0.98]"
                         >
                           List for sale
@@ -678,7 +685,11 @@ function CompactTicketCard({ ticket, index, isSelected, onSelect, onShowQR, onLi
         <div className="flex flex-shrink-0 items-center gap-2">
           {!isPast && !isListed && (
             <button
-              onClick={onShowQR}
+              onClick={(e) => {
+                e.stopPropagation();
+                onShowQR();
+              }}
+              aria-label="Show QR code"
               className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#4DA2FF]/10 text-[#4DA2FF] transition-all hover:bg-[#4DA2FF]/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4DA2FF]"
               title="View QR"
             >
@@ -688,7 +699,11 @@ function CompactTicketCard({ ticket, index, isSelected, onSelect, onShowQR, onLi
           
           {!isPast && (
             <button
-              onClick={onList}
+              onClick={(e) => {
+                e.stopPropagation();
+                onList();
+              }}
+              aria-label="List ticket for sale"
               className="rounded-xl border border-white/12 bg-white/[0.02] px-4 py-2 text-sm font-medium text-white/80 transition-all hover:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4DA2FF]"
             >
               {isListed ? 'Manage' : 'Sell'}
@@ -699,6 +714,7 @@ function CompactTicketCard({ ticket, index, isSelected, onSelect, onShowQR, onLi
           <div className="relative">
             <button
               onClick={() => setShowMenu(showMenu === ticket.id ? null : ticket.id)}
+              aria-label="More options"
               className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.02] text-white/60 transition-all hover:bg-white/[0.06] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4DA2FF]"
             >
               <MoreVertical className="h-4 w-4" />
@@ -719,6 +735,7 @@ function CompactTicketCard({ ticket, index, isSelected, onSelect, onShowQR, onLi
                   </button>
                   <button
                     onClick={() => onCopy(ticket.id, ticket.id)}
+                    aria-label="Copy ticket ID"
                     className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-white/80 transition-colors hover:bg-white/[0.06]"
                   >
                     {copied === ticket.id ? (
@@ -737,13 +754,17 @@ function CompactTicketCard({ ticket, index, isSelected, onSelect, onShowQR, onLi
                     href={explorerObj(ticket.id)}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="View on Sui"
                     className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-white/80 transition-colors hover:bg-white/[0.06]"
                   >
                     <ExternalLink className="h-4 w-4" />
                     View on Sui
                   </a>
                   {isPast && (
-                    <button className="flex w-full items-center gap-2 border-t border-white/8 px-4 py-2.5 text-sm text-white/60 transition-colors hover:bg-white/[0.06]">
+                    <button
+                      aria-label="Archive ticket"
+                      className="flex w-full items-center gap-2 border-t border-white/8 px-4 py-2.5 text-sm text-white/60 transition-colors hover:bg-white/[0.06]"
+                    >
                       <Archive className="h-4 w-4" />
                       Archive
                     </button>
@@ -798,6 +819,7 @@ function EmptyState({ tab, onDemoClick }: any) {
           {config.href ? (
             <a
               href={config.href}
+              aria-label={config.action}
               className="inline-flex items-center gap-2 rounded-xl bg-[#4DA2FF]/10 px-5 py-2.5 text-sm font-medium text-[#4DA2FF] transition-all hover:bg-[#4DA2FF]/20"
             >
               {config.action}
@@ -806,6 +828,7 @@ function EmptyState({ tab, onDemoClick }: any) {
           {tab === 'all' && onDemoClick && (
             <button
               onClick={onDemoClick}
+              aria-label="Try demo wallet"
               className="text-sm text-white/50 hover:text-white/70"
             >
               or try demo wallet

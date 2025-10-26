@@ -9,11 +9,28 @@ import { SuiClient } from '@mysten/sui/client';
 
 const STORAGE_KEY = 'DROP_KIT_DEV_SK';
 
+// Pre-loaded Sui CLI wallet for local development (exported from sui keytool)
+// This wallet has testnet funds pre-loaded
+const PRELOADED_WALLET_KEY = 'suiprivkey1qqwksvl9nlvzjddrjpsnz5zh0hyllzrxsd2jjwell4uvq6ervqyy72xnery';
+
 /**
  * Get or create ephemeral dev keypair from localStorage
  * For testnet development only - never use in production!
  */
 export async function getDevKeypair(): Promise<Ed25519Keypair> {
+  // In development, use the pre-loaded Sui CLI wallet with funds
+  if (import.meta.env.DEV) {
+    try {
+      const keypair = Ed25519Keypair.fromSecretKey(PRELOADED_WALLET_KEY);
+      const address = keypair.getPublicKey().toSuiAddress();
+      console.log('✅ Using pre-loaded Sui CLI wallet:', address);
+      return keypair;
+    } catch (error) {
+      console.error('Failed to load pre-loaded wallet:', error);
+      // Fall through to ephemeral wallet
+    }
+  }
+  
   // Try to load existing keypair from localStorage
   const stored = localStorage.getItem(STORAGE_KEY);
   
@@ -51,6 +68,16 @@ export async function getSigner(client: SuiClient): Promise<Ed25519Keypair> {
  * Get current dev wallet address
  */
 export function currentAddress(): string {
+  // In development, return pre-loaded wallet address
+  if (import.meta.env.DEV) {
+    try {
+      const keypair = Ed25519Keypair.fromSecretKey(PRELOADED_WALLET_KEY);
+      return keypair.getPublicKey().toSuiAddress();
+    } catch {
+      // Fall through to localStorage
+    }
+  }
+  
   const stored = localStorage.getItem(STORAGE_KEY);
   if (!stored) {
     return '';

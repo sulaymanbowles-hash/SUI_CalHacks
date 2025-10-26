@@ -104,7 +104,8 @@ export function Events() {
   const [loading, setLoading] = useState(true);
   const [isSticky, setIsSticky] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  
+  const [showListSheet, setShowListSheet] = useState<string | null>(null);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const searchBarRef = useRef<HTMLDivElement>(null);
 
@@ -373,6 +374,14 @@ export function Events() {
             )}
           </>
         )}
+
+        {showListSheet && (
+          <ListModal
+            isOpen={!!showListSheet}
+            onClose={() => setShowListSheet(null)}
+            ticketId={showListSheet}
+          />
+        )}
       </div>
 
       {/* Event Detail Sheet */}
@@ -520,6 +529,7 @@ function EventCard({ event, index, isFavorite, onToggleFavorite, onClick }: {
               e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
               e.currentTarget.style.transform = 'scale(1)';
             }}
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
             <Heart 
               style={{ 
@@ -700,6 +710,7 @@ function EventDetailSheet({ event, onClose }: { event: Event; onClose: () => voi
             e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.4)';
             e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
           }}
+          aria-label="Close event details"
         >
           <X style={{ width: tokens.icon.button, height: tokens.icon.button }} />
         </button>

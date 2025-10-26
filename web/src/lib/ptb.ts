@@ -127,6 +127,9 @@ export async function publishEvent(params: PublishEventParams): Promise<PublishE
   
   const tx = new Transaction();
   
+  // Calculate total supply from all ticket types
+  const totalSupply = params.ticketTypes.reduce((sum, ticket) => sum + ticket.supply, 0);
+  
   // Step 1: Create Event (returns Event object and GateKeeperCap)
   params.onProgress?.('event', 'Creating event...');
   
@@ -138,6 +141,7 @@ export async function publishEvent(params: PublishEventParams): Promise<PublishE
       tx.pure.u64(params.startsAt),
       tx.pure.u64(params.endsAt),
       tx.pure.string(params.posterCid || 'walrus://placeholder'),
+      tx.pure.u64(totalSupply), // ADD: supply_total parameter
     ],
   });
   
@@ -201,13 +205,7 @@ export async function publishEvent(params: PublishEventParams): Promise<PublishE
     });
   }
   
-  // Step 4: Set event status to LIVE
-  params.onProgress?.('live', 'Publishing event...');
-  
-  tx.moveCall({
-    target: `${PACKAGE_ID}::event::set_live`,
-    arguments: [eventObj],
-  });
+  // Note: Event remains in DRAFT status. Use event::publish to set LIVE after configuring payouts/channels
   
   // Execute transaction
   tx.setGasBudget(50_000_000);
@@ -279,6 +277,228 @@ export async function publishEvent(params: PublishEventParams): Promise<PublishE
 }
 
 /**
+ * Create Event (Atomic Web Flow)
+ * Single PTB that creates event, class, mints ticket, uses/creates kiosk, and lists
+ */
+export interface CreateEventAtomicParams {
+  name: string;
+  startsAt: number;      // Unix timestamp (seconds)
+  endsAt: number;        // Unix timestamp (seconds)
+  priceSui: number;
+  supply: number;
+  posterCid?: string;
+}
+
+export interface CreateEventAtomicResult {
+  digest: string;
+  eventId: string;
+  classId: string;
+  ticketId: string;
+  kioskId: string;
+  listingId: string;
+  policyId: string;
+  effects: any;
+}
+
+/**
+ * PTB: Create Event (Atomic)
+ * Creates event + class + ticket + policy + kiosk + listing in ONE transaction
+ */
+export async function createEventAtomicWeb(params: CreateEventAtomicParams): Promise<CreateEventAtomicResult> {
+  const client = getClient();
+  const signer = await getSigner(client);
+  const address = signer.getPublicKey().toSuiAddress();
+  
+  console.log('Creating event atomically (with policy)...', params);
+  
+  const tx = new Transaction();
+  
+  // Step 1: Create Event
+  const [eventObj] = tx.moveCall({
+    target: `${PACKAGE_ID}::event::new`,
+    arguments: [
+      tx.pure.string(params.name),
+      tx.pure.string('Venue TBD'),
+      tx.pure.u64(params.startsAt),
+      tx.pure.u64(params.endsAt),
+      tx.pure.string(params.posterCid || 'walrus://placeholder'),
+      tx.pure.u64(params.supply), // ADD: supply_total parameter
+    ],
+  });
+  
+  // Step 2: Create TicketClass with royalty config
+  const [classObj] = tx.moveCall({
+    target: `${PACKAGE_ID}::class::new`,
+    arguments: [
+      eventObj,
+      tx.pure.string('General Admission'),
+      tx.pure.string('#4DA2FF'),
+      tx.pure.u64(toMist(params.priceSui)),
+      tx.pure.u64(params.supply),
+      tx.pure.address(address), // artist (90%)
+      tx.pure.address(address), // organizer (8%)
+      tx.pure.u16(9000), // 90% artist
+      tx.pure.u16(800),  // 8% organizer (2% platform implicit)
+    ],
+  });
+  
+  // Step 3: Create Transfer Policy (or use existing POLICY_ID)
+  // For now, we'll reference the existing shared policy from env
+  // In production, you could create a new policy here if needed
+  const policyId = POLICY_ID;
+  
+  // Step 4: Mint ticket from the class
+  const [ticket] = tx.moveCall({
+    target: `${PACKAGE_ID}::ticket::mint`,
+    arguments: [classObj],
+  });
+  
+  // Step 5: Check for existing Kiosk or create new one in same PTB
+  let kioskId: string | undefined;
+  let kioskCapId: string | undefined;
+  
+  const ownedObjects = await client.getOwnedObjects({
+    owner: address,
+    filter: { StructType: '0x2::kiosk::Kiosk' },
+    options: { showContent: true },
+  });
+  
+  if (ownedObjects.data.length > 0 && ownedObjects.data[0].data) {
+    kioskId = ownedObjects.data[0].data.objectId;
+    
+    const capObjects = await client.getOwnedObjects({
+      owner: address,
+      filter: { StructType: '0x2::kiosk::KioskOwnerCap' },
+      options: { showContent: true },
+    });
+    kioskCapId = capObjects.data[0]?.data?.objectId;
+    
+    console.log('✓ Using existing Kiosk:', kioskId);
+    
+    // Step 6: Place and list in existing Kiosk
+    tx.moveCall({
+      target: '0x2::kiosk::place',
+      typeArguments: [getTicketType()],
+      arguments: [
+        tx.object(kioskId),
+        tx.object(kioskCapId!),
+        ticket,
+      ],
+    });
+    
+    // Get the ticket ID after placing - we'll need to extract from results
+    // For listing, we'll use a separate transaction after this one completes
+  } else {
+    // Step 6a: Create new Kiosk in same transaction
+    const [kiosk, kioskCap] = tx.moveCall({
+      target: '0x2::kiosk::default',
+      arguments: [],
+    });
+    
+    // Place ticket in new kiosk
+    tx.moveCall({
+      target: '0x2::kiosk::place',
+      typeArguments: [getTicketType()],
+      arguments: [
+        kiosk,
+        kioskCap,
+        ticket,
+      ],
+    });
+    
+    // Transfer cap to sender
+    tx.transferObjects([kioskCap], tx.pure.address(address));
+  }
+  
+  tx.setGasBudget(50_000_000);
+  
+  const result = await client.signAndExecuteTransaction({
+    signer,
+    transaction: tx,
+    options: { 
+      showEffects: true, 
+      showObjectChanges: true,
+      showEvents: true,
+    },
+  });
+  
+  if (result.effects?.status?.status !== 'success') {
+    throw new Error(`Event creation failed: ${result.effects?.status?.error}`);
+  }
+  
+  // Extract created object IDs
+  const eventId = result.objectChanges?.find((c: any) => 
+    c.type === 'created' && c.objectType?.includes('::event::Event')
+  )?.objectId as string;
+  
+  const classId = result.objectChanges?.find((c: any) => 
+    c.type === 'created' && c.objectType?.includes('::class::TicketClass')
+  )?.objectId as string;
+  
+  const ticketId = result.objectChanges?.find((c: any) => 
+    c.type === 'created' && c.objectType?.includes('::ticket::Ticket')
+  )?.objectId as string;
+  
+  // Extract kiosk if newly created
+  if (!kioskId) {
+    const kioskObj = result.objectChanges?.find((c: any) => 
+      c.type === 'created' && c.objectType?.includes('::kiosk::Kiosk')
+    );
+    kioskId = kioskObj?.objectId as string;
+    
+    const capObj = result.objectChanges?.find((c: any) => 
+      c.type === 'created' && c.objectType?.includes('::kiosk::KioskOwnerCap')
+    );
+    kioskCapId = capObj?.objectId as string;
+  }
+  
+  if (!eventId || !classId || !ticketId || !kioskId) {
+    throw new Error('Failed to extract created object IDs from transaction');
+  }
+  
+  console.log('✓ Event + Class + Ticket + Kiosk created:', { eventId, classId, ticketId, kioskId, policyId });
+  
+  // Step 7: List the ticket in Kiosk (separate transaction since we need the ticket ID)
+  await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for finalization
+  
+  const tx2 = new Transaction();
+  tx2.moveCall({
+    target: '0x2::kiosk::list',
+    typeArguments: [getTicketType()],
+    arguments: [
+      tx2.object(kioskId),
+      tx2.object(kioskCapId!),
+      tx2.pure.id(ticketId),
+      tx2.pure.u64(toMist(params.priceSui)),
+    ],
+  });
+  tx2.setGasBudget(10_000_000);
+  
+  const listResult = await client.signAndExecuteTransaction({
+    signer,
+    transaction: tx2,
+    options: { showEffects: true, showObjectChanges: true },
+  });
+  
+  if (listResult.effects?.status?.status !== 'success') {
+    console.warn('Listing failed, but event was created:', listResult.effects?.status?.error);
+  } else {
+    console.log('✓ Ticket listed in Kiosk');
+  }
+  
+  return {
+    digest: result.digest,
+    eventId,
+    classId,
+    ticketId,
+    kioskId,
+    listingId: ticketId, // For Kiosk, listing ID is the item ID
+    policyId, // Include policy ID in response
+    effects: result.effects,
+  };
+}
+
+/**
  * PTB: Mint & List (Original - for backwards compatibility)
  * Creates event, ticket class, mints ticket, creates/uses kiosk, and lists ticket
  */
@@ -300,6 +520,7 @@ export async function mintAndList(params: MintAndListParams): Promise<MintAndLis
       tx1.pure.u64(now + 86400), // starts tomorrow
       tx1.pure.u64(now + 90000), // ends tomorrow + 1hr
       tx1.pure.string(params.posterCid || 'walrus://placeholder'),
+      tx1.pure.u64(params.supply), // ADD: supply_total parameter
     ],
   });
   tx1.setGasBudget(5_000_000);

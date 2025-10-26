@@ -2,15 +2,23 @@
  * Stepper UI for Demo Console flow
  */
 interface StepHeaderProps {
-  step: 1 | 2;
+  step: number | string;
+  title?: string;
 }
 
-export function StepHeader({ step }: StepHeaderProps) {
+export function StepHeader({ step, title }: StepHeaderProps) {
+  const stepNum = typeof step === 'string' ? parseInt(step) : step;
+  
   return (
-    <div className="mb-6 flex items-center gap-3 text-sm">
-      <Chip active={step >= 1}>1 Mint & List</Chip>
-      <Divider />
-      <Chip active={step >= 2}>2 Buy & Approve</Chip>
+    <div className="mb-6">
+      {title && <h2 className="text-xl font-semibold mb-4 text-ink">{title}</h2>}
+      <div className="flex items-center gap-3 text-sm">
+        <Chip active={stepNum >= 1}>1 Event Details</Chip>
+        <Divider />
+        <Chip active={stepNum >= 2}>2 Ticket Setup</Chip>
+        <Divider />
+        <Chip active={stepNum >= 3}>3 Review & Deploy</Chip>
+      </div>
     </div>
   );
 }
