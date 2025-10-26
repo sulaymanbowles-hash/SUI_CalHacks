@@ -224,10 +224,10 @@ export function Events() {
   const [loading, setLoading] = useState(true);
   const [isSticky, setIsSticky] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [showListSheet, setShowListSheet] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const searchBarRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const prefersReducedMotion = useRef(
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -237,18 +237,21 @@ export function Events() {
     // Simulate loading with dominant color placeholders
     const timer = setTimeout(() => setLoading(false), 600);
     
-    const handleScroll = () => {
-      const sy = window.scrollY;
-      setIsSticky(sy > 80);
-    };
+    // Use IntersectionObserver to detect when bar should be sticky
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsSticky(!entry.isIntersecting);
+      },
+      { threshold: 0 }
+    );
 
-    if (!prefersReducedMotion.current) {
-      window.addEventListener('scroll', handleScroll, { passive: true });
+    if (sentinelRef.current) {
+      observer.observe(sentinelRef.current);
     }
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener('scroll', handleScroll);
+      observer.disconnect();
     };
   }, []);
 
@@ -309,22 +312,25 @@ export function Events() {
       <AmbientBackground intensity="medium" variant="page" />
 
       <div className="mx-auto" style={{ maxWidth: tokens.layout.maxWidth, padding: `56px ${tokens.layout.gutter} 80px` }}>
+        {/* Sentinel element to detect scroll position */}
+        <div ref={sentinelRef} style={{ height: '1px', marginTop: '-1px' }} />
+
         {/* Sticky Search & Filters Bar */}
         <motion.div
           ref={searchBarRef}
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className={`${
-            isSticky 
-              ? 'fixed top-[64px] left-0 right-0 z-40 backdrop-blur-xl border-b' 
-              : 'relative'
-          }`}
+          className={`relative z-20 ${isSticky ? 'is-sticky' : ''}`}
           style={{
+            position: 'sticky',
+            top: '64px',
             backgroundColor: isSticky ? 'rgba(6, 21, 34, 0.95)' : 'transparent',
-            borderColor: isSticky ? tokens.colors.border.default : 'transparent',
-            boxShadow: isSticky ? tokens.shadow.elevated : 'none',
+            backdropFilter: isSticky ? 'blur(12px) saturate(140%)' : 'none',
+            borderBottom: isSticky ? `1px solid ${tokens.colors.border.default}` : '1px solid transparent',
+            boxShadow: isSticky ? `0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 0 rgba(255, 255, 255, 0.03)` : 'none',
             transition: `all ${tokens.motion.duration.fast} ${tokens.motion.easing.default}`,
+            marginBottom: tokens.spacing.lg,
           }}
         >
           <div className="mx-auto" style={{ maxWidth: tokens.layout.maxWidth, padding: `${tokens.spacing.md} ${tokens.layout.gutter}` }}>
@@ -407,7 +413,9 @@ export function Events() {
                 {filteredEvents.length} events
               </div>
               <div className="relative">
+                <label htmlFor="sort-select" className="sr-only">Sort events by</label>
                 <select
+                  id="sort-select"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   className="appearance-none backdrop-blur-xl transition-all focus:outline-none"
@@ -430,9 +438,6 @@ export function Events() {
           </div>
         </motion.div>
 
-        {/* Spacer when sticky */}
-        {isSticky && <div className="h-[160px]" />}
-
         {/* Loading skeletons */}
         {loading ? (
           <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -449,8 +454,8 @@ export function Events() {
                   backgroundColor: tokens.colors.bg.card,
                 }}
               >
-                {/* Skeleton image with shimmer */}
-                <div className="aspect-[16/9] relative overflow-hidden" style={{ backgroundColor: tokens.colors.bg.surface1 }}>
+                {/* Skeleton image with shimmer - fixed height */}
+                <div className="relative overflow-hidden" style={{ height: '180px', backgroundColor: tokens.colors.bg.surface1 }}>
                   <div className="shimmer-effect absolute inset-0" />
                 </div>
                 {/* Skeleton content */}
@@ -493,14 +498,6 @@ export function Events() {
               <EmptyState onClear={clearAllFilters} />
             )}
           </>
-        )}
-
-        {showListSheet && (
-          <ListModal
-            isOpen={!!showListSheet}
-            onClose={() => setShowListSheet(null)}
-            ticketId={showListSheet}
-          />
         )}
       </div>
 
