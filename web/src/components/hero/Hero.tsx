@@ -84,14 +84,14 @@ export default function Hero() {
               boxShadow: hoveredCard === 'left' 
                 ? '0 12px 32px rgba(3,15,28,.16), 0 0 48px rgba(77,162,255,.12), inset 0 0 0 1px rgba(90,224,229,0.2)'
                 : '0 8px 24px rgba(3,15,28,.12)',
-              transition: 'transform 0.18s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.22s ease-out',
+              transition: 'transform 0.2s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.2s cubic-bezier(0.23, 1, 0.32, 1)',
             }}
             onMouseEnter={() => setHoveredCard('left')}
             onMouseLeave={() => setHoveredCard(null)}
           >
             {/* Moving light from water shader */}
             <div 
-              className="pointer-events-none absolute inset-0 rounded-[14px] bg-gradient-to-br from-[#4DA2FF]/[0.08] via-transparent to-transparent opacity-0 transition-opacity duration-300"
+              className="pointer-events-none absolute inset-0 rounded-[14px] bg-gradient-to-br from-[#4DA2FF]/[0.08] via-transparent to-transparent transition-opacity duration-200"
               style={{ opacity: hoveredCard === 'left' ? 1 : 0 }}
               aria-hidden="true"
             />
@@ -130,14 +130,14 @@ export default function Hero() {
               boxShadow: hoveredCard === 'right'
                 ? '0 12px 32px rgba(3,15,28,.16), 0 0 48px rgba(90,224,229,.12), inset 0 0 0 1px rgba(90,224,229,0.2)'
                 : '0 8px 24px rgba(3,15,28,.12)',
-              transition: 'transform 0.18s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.22s ease-out',
+              transition: 'transform 0.2s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.2s cubic-bezier(0.23, 1, 0.32, 1)',
             }}
             onMouseEnter={() => setHoveredCard('right')}
             onMouseLeave={() => setHoveredCard(null)}
           >
             {/* Moving light from water shader */}
             <div 
-              className="pointer-events-none absolute inset-0 rounded-[14px] bg-gradient-to-br from-[#5AE0E5]/[0.08] via-transparent to-transparent opacity-0 transition-opacity duration-300"
+              className="pointer-events-none absolute inset-0 rounded-[14px] bg-gradient-to-br from-[#5AE0E5]/[0.08] via-transparent to-transparent transition-opacity duration-200"
               style={{ opacity: hoveredCard === 'right' ? 1 : 0 }}
               aria-hidden="true"
             />

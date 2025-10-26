@@ -85,14 +85,18 @@ export default function TypedHeadline({ lines, className = '' }: TypedHeadlinePr
 
   // Caret blink animation
   useEffect(() => {
-    if (isComplete || !showCaret) return;
+    if (isComplete) {
+      // Stop blinking when complete, keep caret visible
+      setShowCaret(true);
+      return;
+    }
 
     const interval = setInterval(() => {
       setShowCaret(prev => !prev);
     }, 530); // ~530ms blink rate
 
     return () => clearInterval(interval);
-  }, [isComplete, showCaret]);
+  }, [isComplete]);
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -112,6 +116,7 @@ export default function TypedHeadline({ lines, className = '' }: TypedHeadlinePr
       {displayedLines.map((line, idx) => (
         <span key={idx} className="block">
           {line}
+          {/* Only show caret during typing, not after completion */}
           {idx === currentLineIndex - 1 && !isComplete && (
             <span 
               className="inline-block ml-0.5 w-[2px] h-[0.85em] align-middle bg-white"
@@ -124,8 +129,8 @@ export default function TypedHeadline({ lines, className = '' }: TypedHeadlinePr
           )}
         </span>
       ))}
-      {/* Show caret after last line */}
-      {isComplete && showCaret && (
+      {/* Show caret after last line only when complete */}
+      {isComplete && (
         <span 
           className="inline-block ml-0.5 w-[2px] h-[0.85em] align-middle bg-white"
           style={{

@@ -7,6 +7,9 @@ interface TransferModalProps {
   ticket: {
     id: string;
     title: string;
+    venue?: string;
+    date?: string;
+    serialNumber?: number;
   };
   onClose: () => void;
   onTransfer: (ticketId: string, recipient: string) => Promise<void>;
