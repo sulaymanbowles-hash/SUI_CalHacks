@@ -54,7 +54,7 @@ export function MyTickets() {
   const [copied, setCopied] = useState<string | null>(null);
   const [selectedTickets, setSelectedTickets] = useState<string[]>([]);
   const [showMenu, setShowMenu] = useState<string | null>(null);
-  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(true); // Changed to true by default
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [sortBy, setSortBy] = useState<SortOption>('date');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -87,16 +87,12 @@ export function MyTickets() {
   }, []);
 
   useEffect(() => {
-    if (address && !isDemoMode) {
-      loadTickets();
-    } else if (isDemoMode) {
-      setTimeout(() => {
-        setTickets(DEMO_TICKETS);
-        setLoading(false);
-      }, 600);
-    } else {
+    // Always load demo tickets for demonstration purposes
+    // In production, you would check if address exists and load real tickets
+    setTimeout(() => {
+      setTickets(DEMO_TICKETS);
       setLoading(false);
-    }
+    }, 600);
   }, [address, isDemoMode]);
 
   // Keyboard navigation
@@ -919,7 +915,7 @@ function TicketRow({
               <div className="text-sm">
                 <span className="font-semibold text-white">Listed at {ticket.listing.price.toFixed(2)} SUI</span>
                 {ticket.listing.views !== undefined && (
-                  <span className="ml-2 text-xs text-white/50">• {ticket.listing.views} views</span>
+                  <span className="ml-2 text-xs text-white/50">• {ticket.listing.views}</span>
                 )}
                 {ticket.listing.offers !== undefined && ticket.listing.offers > 0 && (
                   <span className="ml-2 text-xs text-amber-400">• {ticket.listing.offers} offers</span>

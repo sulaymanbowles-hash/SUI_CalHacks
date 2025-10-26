@@ -31,16 +31,10 @@ export default function TypedHeadline({ lines, className = '' }: TypedHeadlinePr
     // Start typing animation after component mounts
     const startTyping = () => {
       if (currentLineIndex >= lines.length) {
-        // All lines complete
+        // All lines complete - fade out caret immediately and expand line-height
         setIsComplete(true);
-        setShowCaret(true);
-        
-        // Hold caret for 1.2s then fade out
-        caretTimeoutRef.current = setTimeout(() => {
-          setShowCaret(false);
-          // Expand line-height slightly for "settle" effect
-          setLineHeight(1.1);
-        }, 1200);
+        setShowCaret(false);
+        setLineHeight(1.1);
         return;
       }
 
@@ -48,8 +42,8 @@ export default function TypedHeadline({ lines, className = '' }: TypedHeadlinePr
       
       if (currentCharIndex < currentLine.length) {
         // Type next character with human-like variability
-        const baseDelay = currentLineIndex === 0 ? 55 : currentLineIndex === 1 ? 60 : 73; // L1: ~800ms, L2: ~900ms, L3: ~1100ms
-        const variance = baseDelay * (0.1 + Math.random() * 0.15); // 10-15% variability
+        const baseDelay = currentLineIndex === 0 ? 55 : currentLineIndex === 1 ? 60 : 73;
+        const variance = baseDelay * (0.1 + Math.random() * 0.15);
         const delay = baseDelay + variance;
 
         timeoutRef.current = setTimeout(() => {
@@ -66,7 +60,7 @@ export default function TypedHeadline({ lines, className = '' }: TypedHeadlinePr
         timeoutRef.current = setTimeout(() => {
           setCurrentLineIndex(currentLineIndex + 1);
           setCurrentCharIndex(0);
-        }, 150); // Inter-line delay
+        }, 150);
       }
     };
 
@@ -83,17 +77,15 @@ export default function TypedHeadline({ lines, className = '' }: TypedHeadlinePr
     };
   }, [currentLineIndex, currentCharIndex, lines, displayedLines]);
 
-  // Caret blink animation
+  // Caret blink animation (only while typing)
   useEffect(() => {
     if (isComplete) {
-      // Stop blinking when complete, keep caret visible
-      setShowCaret(true);
       return;
     }
 
     const interval = setInterval(() => {
       setShowCaret(prev => !prev);
-    }, 530); // ~530ms blink rate
+    }, 530);
 
     return () => clearInterval(interval);
   }, [isComplete]);
@@ -116,8 +108,8 @@ export default function TypedHeadline({ lines, className = '' }: TypedHeadlinePr
       {displayedLines.map((line, idx) => (
         <span key={idx} className="block">
           {line}
-          {/* Only show caret during typing, not after completion */}
-          {idx === currentLineIndex - 1 && !isComplete && (
+          {/* Only show caret on the current line being typed */}
+          {idx === currentLineIndex && !isComplete && (
             <span 
               className="inline-block ml-0.5 w-[2px] h-[0.85em] align-middle bg-white"
               style={{
@@ -129,17 +121,6 @@ export default function TypedHeadline({ lines, className = '' }: TypedHeadlinePr
           )}
         </span>
       ))}
-      {/* Show caret after last line only when complete */}
-      {isComplete && (
-        <span 
-          className="inline-block ml-0.5 w-[2px] h-[0.85em] align-middle bg-white"
-          style={{
-            opacity: showCaret ? 1 : 0,
-            transition: 'opacity 400ms ease-out',
-          }}
-          aria-hidden="true"
-        />
-      )}
     </h1>
   );
 }

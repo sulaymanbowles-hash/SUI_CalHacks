@@ -1148,3 +1148,112 @@ export async function checkEventGating(eventId: string): Promise<EventGatingStat
     };
   }
 }
+
+/**
+ * Atomic Go Live - Extended params interface for CreateEvent page
+ */
+export interface AtomicGoLiveParams {
+  eventName: string;
+  location: string;
+  startsAt: number;
+  endsAt: number;
+  posterCid: string;
+  ticketTypes: {
+    name: string;
+    color: string;
+    supply: number;
+    priceMist: number;
+  }[];
+  artistBps: number;
+  organizerBps: number;
+  platformBps: number;
+  artistAddress: string;
+  organizerAddress: string;
+  platformAddress: string;
+  onProgress?: (step: string, message: string) => void;
+}
+
+export interface AtomicGoLiveResult {
+  digest: string;
+  eventId: string;
+  gateKeeperCapId: string;
+  eventCapId: string;
+  ticketClasses: {
+    classId: string;
+    name: string;
+    supply: number;
+    priceMist: number;
+  }[];
+  kioskId: string;
+}
+
+/**
+ * PTB: Atomic Go Live (Wrapper for publishEvent with extended functionality)
+ * Creates event, ticket classes, and returns complete setup
+ */
+export async function atomicGoLive(params: AtomicGoLiveParams): Promise<AtomicGoLiveResult> {
+  const client = getClient();
+  const signer = await getSigner(client);
+  const address = signer.getPublicKey().toSuiAddress();
+  
+  params.onProgress?.('init', 'Preparing transaction...');
+  
+  // Calculate total supply from all ticket types
+  const totalSupply = params.ticketTypes.reduce((sum, ticket) => sum + ticket.supply, 0);
+  
+  // Step 1: Create Event in first transaction
+  params.onProgress?.('event', 'Creating event...');
+  
+  const tx1 = new Transaction();
+  tx1.moveCall({
+    target: `${PACKAGE_ID}::event::new`,
+    arguments: [
+      tx1.pure.string(params.eventName),
+      tx1.pure.string(params.location),
+      tx1.pure.u64(params.startsAt),
+      tx1.pure.u64(params.endsAt),
+      tx1.pure.string(params.posterCid || 'walrus://placeholder'),
+      tx1.pure.u64(totalSupply),
+    ],
+  });
+  tx1.setGasBudget(10_000_000);
+  
+  const result1 = await client.signAndExecuteTransaction({
+    signer,
+    transaction: tx1,
+    options: { 
+      showEffects: true, 
+      showObjectChanges: true,
+    },
+  });
+  
+  if (result1.effects?.status?.status !== 'success') {
+    throw new Error(`Event creation failed: ${result1.effects?.status?.error}`);
+  }
+  
+  // Extract created object IDs
+  const eventId = result1.objectChanges?.find((c: any) => 
+    c.type === 'created' && c.objectType?.includes('::event::Event')
+  )?.objectId as string | undefined;
+  
+  const gateKeeperCapId = result1.objectChanges?.find((c: any) => 
+    c.type === 'created' && c.objectType?.includes('::event::GateKeeperCap')
+  )?.objectId as string | undefined;
+  
+  const eventCapId = result1.objectChanges?.find((c: any) => 
+    c.type === 'created' && c.objectType?.includes('::event::EventCap')
+  )?.objectId as string | undefined;
+  
+  if (!eventId || !gateKeeperCapId || !eventCapId) {
+    throw new Error('Failed to extract event or capability ID from transaction');
+  }
+  
+  console.log('✓ Event created:', { eventId, gateKeeperCapId, eventCapId });
+  
+  // Wait longer for finalization (increased from 2s to 4s)
+  params.onProgress?.('event', 'Waiting for event finalization...');
+  await new Promise(resolve => setTimeout(resolve, 4000));
+  
+  // Step 2: Check for existing Kiosk or create new one
+  params.onProgress?.('kiosk', 'Setting up sales channel...');
+  
