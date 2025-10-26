@@ -7,6 +7,7 @@ import { ScrollProgress } from './components/motion/ScrollProgress';
 import { Landing } from './pages/Landing';
 import { AppConsole } from './pages/AppConsole';
 import { MyTickets } from './pages/MyTickets';
+import { Collections } from './pages/Collections';
 import { CheckIn } from './pages/CheckIn';
 import { AuthCallback } from './pages/AuthCallback';
 import { Events } from './pages/Events';
@@ -35,6 +36,7 @@ function App() {
                 <Route path="/" element={<Landing />} />
                 <Route path="/events" element={<Events />} />
                 <Route path="/my-tickets" element={<MyTickets />} />
+                <Route path="/collections" element={<Collections />} />
                 <Route path="/console" element={<AppConsole />} />
                 <Route path="/checkin" element={<CheckIn />} />
                 <Route path="/auth" element={<AuthCallback />} />
