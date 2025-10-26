@@ -17,30 +17,35 @@ function MarketplaceRow() {
       <FadeRise>
         <div className="mb-6 flex items-end justify-between">
           <h2 className="font-[Inter_Tight] text-2xl tracking-tight text-[#DCE7F0]">Upcoming events</h2>
-          <Link to="/events" className="text-sm text-[var(--muted)] hover:text-[#DCE7F0]">View all →</Link>
+          <Link to="/events" className="text-sm text-[var(--muted)] transition-colors hover:text-[#DCE7F0]">View all →</Link>
         </div>
       </FadeRise>
       <Stagger delay={0.1}>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {events.map(e => (
-            <motion.a
+            <Link
               key={e.title}
-              variants={item}
-              className="card group overflow-hidden p-0 hover-lift"
+              to="/events"
+              className="block"
             >
-              <div className="aspect-[3/4] overflow-hidden bg-gradient-to-br from-[#4DA2FF]/20 to-[#5AE0E5]/20">
-                <div className="flex h-full items-center justify-center text-white/30 transition-transform duration-300 group-hover:scale-105">
-                  <svg className="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                  </svg>
+              <motion.div
+                variants={item}
+                className="card group overflow-hidden p-0 hover-lift transition-transform"
+              >
+                <div className="aspect-[3/4] overflow-hidden bg-gradient-to-br from-[#4DA2FF]/20 to-[#5AE0E5]/20">
+                  <div className="flex h-full items-center justify-center text-white/30 transition-transform duration-300 group-hover:scale-105">
+                    <svg className="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                    </svg>
+                  </div>
                 </div>
-              </div>
-              <div className="p-4">
-                <div className="font-medium text-[#DCE7F0] group-hover:underline">{e.title}</div>
-                <div className="mt-1 text-xs text-[var(--muted)]">{e.date} • {e.city}</div>
-                <div className="mt-3 tabular-nums text-[#DCE7F0]">${e.price.toFixed(2)}</div>
-              </div>
-            </motion.a>
+                <div className="p-4">
+                  <div className="font-medium text-[#DCE7F0] group-hover:underline">{e.title}</div>
+                  <div className="mt-1 text-xs text-[var(--muted)]">{e.date} • {e.city}</div>
+                  <div className="mt-3 tabular-nums text-[#DCE7F0]">${e.price}</div>
+                </div>
+              </motion.div>
+            </Link>
           ))}
         </div>
       </Stagger>
@@ -175,12 +180,12 @@ export function Landing() {
           </FadeRise>
           <FadeRise delay={0.1}>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <Link to="/app">
+              <Link to="/events">
                 <button
                   onPointerDown={spawnRipple}
                   className="btn btn-primary inline-flex items-center gap-2 rounded-xl px-6 py-3 font-medium text-white hover:scale-[1.02]"
                 >
-                  Launch App
+                  Browse Events
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>

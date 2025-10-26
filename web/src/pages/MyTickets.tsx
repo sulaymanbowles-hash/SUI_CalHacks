@@ -10,7 +10,6 @@ import {
   QrCode,
   DollarSign,
   Send,
-  Edit3,
   X,
   Copy,
   Check,
@@ -20,15 +19,16 @@ import {
   Calendar,
   MapPin,
   MoreVertical,
-  Plus,
   Wallet,
   Download,
   TrendingUp,
   Archive,
 } from 'lucide-react';
-import { getOwnedTickets, type OwnedTicket } from '../lib/rpc';
+import { QRCodeSVG } from 'qrcode.react';
+import { getOwnedTickets } from '../lib/rpc';
 import { currentAddress } from '../lib/signer';
 import { explorerObj, shortenAddress } from '../lib/explorer';
+import { generateTicketQRData } from '../utils/qrcode';
 
 type Tab = 'all' | 'upcoming' | 'listed' | 'past';
 
@@ -379,9 +379,20 @@ export function MyTickets() {
                 <h3 className="mb-2 text-xl font-semibold text-gray-900">Ticket QR Code</h3>
                 <p className="mb-6 text-sm text-gray-600">Show this at venue entrance</p>
                 
-                {/* Mock QR */}
-                <div className="mx-auto mb-6 flex h-64 w-64 items-center justify-center rounded-2xl border-2 border-gray-200 bg-gray-50">
-                  <QrCode className="h-32 w-32 text-gray-300" />
+                {/* Real QR Code */}
+                <div className="mx-auto mb-6 flex items-center justify-center rounded-2xl border-2 border-gray-200 bg-white p-4">
+                  <QRCodeSVG
+                    value={generateTicketQRData({
+                      ticketId: showQR,
+                      ownerAddress: address || 'demo',
+                      serialNumber: tickets.find(t => t.id === showQR)?.serialNumber,
+                    })}
+                    size={256}
+                    level="H"
+                    includeMargin={true}
+                    bgColor="#FFFFFF"
+                    fgColor="#000000"
+                  />
                 </div>
                 
                 <div className="mb-4 rounded-xl bg-gray-100 p-3 font-mono text-xs text-gray-600">
@@ -390,11 +401,47 @@ export function MyTickets() {
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                  <button className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                  <button 
+                    onClick={() => {
+                      // TODO: Integrate with Apple/Google Wallet
+                      alert('Add to Wallet integration coming soon');
+                    }}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                  >
                     <Wallet className="h-4 w-4" />
                     Add to Wallet
                   </button>
-                  <button className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                  <button 
+                    onClick={() => {
+                      // Download QR as PNG
+                      const svg = document.querySelector('.qr-code-svg');
+                      if (svg) {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const img = new Image();
+                        const svgData = new XMLSerializer().serializeToString(svg);
+                        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                        const url = URL.createObjectURL(svgBlob);
+                        
+                        img.onload = () => {
+                          canvas.width = 512;
+                          canvas.height = 512;
+                          ctx?.drawImage(img, 0, 0, 512, 512);
+                          canvas.toBlob((blob) => {
+                            if (blob) {
+                              const link = document.createElement('a');
+                              link.download = `ticket-${shortenAddress(showQR, 8)}.png`;
+                              link.href = URL.createObjectURL(blob);
+                              link.click();
+                            }
+                          });
+                          URL.revokeObjectURL(url);
+                        };
+                        img.src = url;
+                      }
+                    }}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                  >
                     <Download className="h-4 w-4" />
                     Download
                   </button>

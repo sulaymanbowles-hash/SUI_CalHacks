@@ -836,26 +836,26 @@ function EventDetailSheet({ event, onClose }: { event: Event; onClose: () => voi
                 className="h-full w-full object-cover"
               />
             ) : (
-              <div className="flex h-full items-center justify-center" style={{ color: tokens.colors.text.muted, opacity: 0.3 }}>
+              <div className="flex h-full items-center justify-center" style={{ color: tokens.colors.text.muted, opacity: 0.3 }}></div>
                 <Calendar style={{ width: '64px', height: '64px' }} />
               </div>
             )}
           </div>
 
           {/* Right: Details & CTA */}
-          <div className="flex flex-col">
+          <div className="flex flex-col"></div>
             <div className="mb-4 flex items-start gap-2">
               <h2 className="flex-1" style={{ fontSize: tokens.typography.h2.size, fontWeight: 600, color: tokens.colors.text.primary }}>
                 {event.title}
               </h2>
               {event.verified && (
-                <div style={{ borderRadius: tokens.radius.md, backgroundColor: tokens.colors.status.verifiedBg, padding: '6px' }}>
+                <div style={{ borderRadius: tokens.radius.md, backgroundColor: tokens.colors.status.verifiedBg, padding: '6px' }}></div>
                   <BadgeCheck style={{ width: tokens.icon.inline, height: tokens.icon.inline, color: tokens.colors.status.verified }} />
                 </div>
               )}
             </div>
 
-            <div className="mb-6 space-y-3" style={{ fontSize: tokens.typography.small.size, color: tokens.colors.text.secondary }}>
+            <div className="mb-6 space-y-3" style={{ fontSize: tokens.typography.small.size, color: tokens.colors.text.secondary }}></div>
               <div className="flex items-start gap-3">
                 <Calendar className="mt-0.5 flex-shrink-0" style={{ width: tokens.icon.inline, height: tokens.icon.inline }} />
                 <div>
@@ -878,7 +878,7 @@ function EventDetailSheet({ event, onClose }: { event: Event; onClose: () => voi
               border: `1px solid ${tokens.colors.border.default}`,
               backgroundColor: tokens.colors.bg.card,
               padding: tokens.spacing.md,
-            }}>
+            }}></div>
               <div className="mb-3" style={{ fontSize: tokens.typography.micro.size, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: tokens.colors.text.muted }}>
                 Price breakdown
               </div>
@@ -909,7 +909,7 @@ function EventDetailSheet({ event, onClose }: { event: Event; onClose: () => voi
                 backgroundColor: tokens.colors.bg.surface1,
                 padding: `6px ${tokens.spacing.sm}`,
                 color: tokens.colors.text.secondary,
-              }}>
+              }}></div>
                 <Sparkles style={{ width: '12px', height: '12px' }} />
                 Counterfeit-proof
               </div>
@@ -918,7 +918,7 @@ function EventDetailSheet({ event, onClose }: { event: Event; onClose: () => voi
                 backgroundColor: tokens.colors.bg.surface1,
                 padding: `6px ${tokens.spacing.sm}`,
                 color: tokens.colors.text.secondary,
-              }}>
+              }}></div>
                 <BadgeCheck style={{ width: '12px', height: '12px' }} />
                 Instant settlement
               </div>
