@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head><title>Dev Wallet Info</title></head>
+<body style="font-family: monospace; padding: 20px; background: #0a1929; color: #fff;">
+  <h2>🔑 Dev Wallet Address</h2>
+  <div id="output"></div>
+  <script type="module">
+    import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+    
+    const stored = localStorage.getItem('DROP_KIT_DEV_SK');
+    const output = document.getElementById('output');
+    
+    if (stored) {
+      try {
+        const keypair = Ed25519Keypair.fromSecretKey(stored);
+        const address = keypair.getPublicKey().toSuiAddress();
+        output.innerHTML = `
+          <p style="color: #4DA2FF;">✅ Dev Wallet Found</p>
+          <p><strong>Address:</strong></p>
+          <p style="background: #1a2332; padding: 10px; border-radius: 8px; word-break: break-all;">
+            ${address}
+          </p>
+          <p style="margin-top: 20px;"><strong>Private Key (Bech32):</strong></p>
+          <p style="background: #1a2332; padding: 10px; border-radius: 8px; word-break: break-all; font-size: 11px;">
+            ${stored}
+          </p>
+          <p style="color: #FFB020; margin-top: 20px;">⚠️ Keep your private key safe! Never share it.</p>
+        `;
+      } catch (err) {
+        output.innerHTML = `<p style="color: #ff4444;">❌ Error: ${err.message}</p>`;
+      }
+    } else {
+      output.innerHTML = '<p style="color: #FFB020;">⚠️ No dev wallet found. Visit the app to create one.</p>';
+    }
+  </script>
+</body>
+</html>

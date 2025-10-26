@@ -14,8 +14,11 @@ import {
   Sparkles,
   BadgeCheck,
   ArrowRight,
+  Heart,
 } from 'lucide-react';
 import { tokens } from '../design-tokens';
+import { AmbientBackground } from '../components/AmbientBackground';
+import { Chip } from '../components/Chip';
 
 interface Event {
   id: string;
@@ -100,9 +103,8 @@ export function Events() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSticky, setIsSticky] = useState(false);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
   
-  const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
-  const [scrollY, setScrollY] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const searchBarRef = useRef<HTMLDivElement>(null);
 
@@ -116,31 +118,16 @@ export function Events() {
     
     const handleScroll = () => {
       const sy = window.scrollY;
-      setScrollY(sy);
       setIsSticky(sy > 80);
-    };
-    
-    const handleMouseMove = (e: MouseEvent) => {
-      if (prefersReducedMotion.current || !containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const isInside = e.clientY >= rect.top && e.clientY <= rect.bottom;
-      if (isInside) {
-        setMousePos({
-          x: e.clientX / window.innerWidth,
-          y: (e.clientY - rect.top) / rect.height,
-        });
-      }
     };
 
     if (!prefersReducedMotion.current) {
       window.addEventListener('scroll', handleScroll, { passive: true });
-      window.addEventListener('mousemove', handleMouseMove, { passive: true });
     }
 
     return () => {
       clearTimeout(timer);
       window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('mousemove', handleMouseMove);
     };
   }, []);
 
@@ -153,6 +140,19 @@ export function Events() {
   const clearAllFilters = () => {
     setSearchQuery('');
     setSelectedFilters([]);
+  };
+
+  const toggleFavorite = (eventId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFavorites(prev => {
+      const next = new Set(prev);
+      if (next.has(eventId)) {
+        next.delete(eventId);
+      } else {
+        next.add(eventId);
+      }
+      return next;
+    });
   };
 
   const filteredEvents = MOCK_EVENTS.filter(event => {
@@ -183,66 +183,9 @@ export function Events() {
 
   const hasActiveFilters = selectedFilters.length > 0 || searchQuery.length > 0;
 
-  const auroraParallax = prefersReducedMotion.current ? 0 : scrollY * 0.012;
-  const parallaxX = prefersReducedMotion.current ? 0 : (mousePos.x - 0.5) * 8;
-  const parallaxY = prefersReducedMotion.current ? 0 : (mousePos.y - 0.5) * 8;
-  const glowX = 50 + (prefersReducedMotion.current ? 0 : (mousePos.x - 0.5) * 5);
-  const glowY = 50 + (prefersReducedMotion.current ? 0 : (mousePos.y - 0.5) * 5);
-
   return (
     <main ref={containerRef} className="relative min-h-screen overflow-hidden" style={{ backgroundColor: tokens.colors.bg.canvas }}>
-      {/* Ambient background with parallax drift */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[#061522] to-transparent" />
-        
-        {/* Main aurora orb */}
-        <div 
-          className="ambient-orb absolute"
-          style={{
-            width: tokens.ambient.orb.radius,
-            height: tokens.ambient.orb.radius,
-            left: '35%',
-            top: `calc(25% + ${auroraParallax}px)`,
-            opacity: tokens.ambient.orb.opacity,
-            transform: `translate3d(${parallaxX}px, ${parallaxY}px, 0)`,
-            background: 'radial-gradient(circle, rgba(77,162,255,.32) 0%, transparent 62%)',
-            filter: `blur(${tokens.ambient.orb.blur})`,
-            transition: prefersReducedMotion.current ? 'none' : 'transform 0.55s cubic-bezier(0.23, 1, 0.32, 1)',
-          }}
-        />
-
-        {/* Sui glyph watermark */}
-        <div 
-          className="glyph-pattern absolute inset-0"
-          style={{
-            transform: `translateY(${scrollY * 0.006}px)`,
-            backgroundImage: "url(/brand/sui/glyph.svg)",
-            backgroundSize: "48px 48px",
-            backgroundRepeat: "repeat",
-            opacity: Math.max(0.01, tokens.ambient.noise.opacity * (1 - scrollY / 800)),
-            WebkitMaskImage: "radial-gradient(50% 50% at 50% 40%, #000 0%, rgba(0,0,0,0.25) 50%, transparent 100%)",
-            maskImage: "radial-gradient(50% 50% at 50% 40%, #000 0%, rgba(0,0,0,0.25) 50%, transparent 100%)",
-          }}
-        />
-
-        {/* Interactive proximity glow */}
-        <div 
-          className="proximity-glow absolute"
-          style={{
-            width: tokens.ambient.glow.radius,
-            height: tokens.ambient.glow.radius,
-            left: `${glowX - 14}%`,
-            top: `${glowY - 14}%`,
-            background: `radial-gradient(circle, ${tokens.colors.brand.primary}35 0%, transparent 68%)`,
-            filter: `blur(${tokens.ambient.glow.blur})`,
-            opacity: tokens.ambient.glow.opacity,
-            transform: `translate3d(${parallaxX * 0.3}px, ${parallaxY * 0.3}px, 0)`,
-            transition: prefersReducedMotion.current 
-              ? 'none' 
-              : 'left 0.55s cubic-bezier(0.23, 1, 0.32, 1), top 0.55s cubic-bezier(0.23, 1, 0.32, 1), transform 0.55s cubic-bezier(0.23, 1, 0.32, 1)',
-          }}
-        />
-      </div>
+      <AmbientBackground intensity="medium" variant="page" />
 
       <div className="mx-auto" style={{ maxWidth: tokens.layout.maxWidth, padding: `56px ${tokens.layout.gutter} 80px` }}>
         {/* Sticky Search & Filters Bar */}
@@ -253,20 +196,20 @@ export function Events() {
           transition={{ duration: 0.4 }}
           className={`${
             isSticky 
-              ? 'fixed top-[64px] left-0 right-0 z-40 backdrop-blur-xl border-b shadow-lg' 
+              ? 'fixed top-[64px] left-0 right-0 z-40 backdrop-blur-xl border-b' 
               : 'relative'
           }`}
           style={{
             backgroundColor: isSticky ? 'rgba(6, 21, 34, 0.95)' : 'transparent',
             borderColor: isSticky ? tokens.colors.border.default : 'transparent',
-            boxShadow: isSticky ? tokens.shadow[2] : 'none',
-            transition: `all ${tokens.motion.duration.slow} ${tokens.motion.easing.default}`,
+            boxShadow: isSticky ? tokens.shadow.elevated : 'none',
+            transition: `all ${tokens.motion.duration.fast} ${tokens.motion.easing.default}`,
           }}
         >
           <div className="mx-auto" style={{ maxWidth: tokens.layout.maxWidth, padding: `${tokens.spacing.md} ${tokens.layout.gutter}` }}>
             {/* Search rail */}
             <div className="relative mx-auto mb-4 max-w-2xl">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2" style={{ width: tokens.icon.button, height: tokens.icon.button, color: tokens.colors.text.muted }} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2" style={{ width: tokens.icon.inline, height: tokens.icon.inline, color: tokens.colors.text.muted }} />
               <input
                 type="text"
                 value={searchQuery}
@@ -274,7 +217,7 @@ export function Events() {
                 placeholder="Search events, artists, venues…"
                 className="h-14 w-full pl-12 pr-20 backdrop-blur-xl transition-all focus:outline-none"
                 style={{
-                  borderRadius: tokens.radius.xl,
+                  borderRadius: tokens.radius.md,
                   border: `1px solid ${tokens.colors.border.default}`,
                   backgroundColor: tokens.colors.bg.surface1,
                   color: tokens.colors.text.primary,
@@ -283,16 +226,14 @@ export function Events() {
                 onFocus={(e) => {
                   e.target.style.borderColor = tokens.colors.border.focus;
                   e.target.style.boxShadow = `0 0 0 2px ${tokens.colors.brand.primary}33`;
-                  e.target.style.backgroundColor = tokens.colors.bg.surface2;
                 }}
                 onBlur={(e) => {
                   e.target.style.borderColor = tokens.colors.border.default;
                   e.target.style.boxShadow = 'none';
-                  e.target.style.backgroundColor = tokens.colors.bg.surface1;
                 }}
               />
               <kbd className="absolute right-4 top-1/2 -translate-y-1/2 px-2 py-1 font-mono" style={{
-                borderRadius: tokens.radius.md,
+                borderRadius: tokens.radius.sm,
                 border: `1px solid ${tokens.colors.border.default}`,
                 backgroundColor: tokens.colors.bg.surface1,
                 fontSize: tokens.typography.micro.size,
@@ -302,122 +243,46 @@ export function Events() {
               </kbd>
             </div>
 
-            {/* Quick filters with count badges & reset */}
+            {/* Quick filters with unified Chip component */}
             <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
               {QUICK_FILTERS.map((filter) => {
                 const count = getFilterCount(filter.id);
                 const isSelected = selectedFilters.includes(filter.id);
                 return (
-                  <button
+                  <Chip
                     key={filter.id}
+                    selected={isSelected}
+                    count={isSelected ? count : undefined}
                     onClick={() => toggleFilter(filter.id)}
-                    className="group relative transition-all"
-                    style={{
-                      borderRadius: tokens.radius.full,
-                      padding: `${tokens.spacing.xs} ${tokens.spacing.md}`,
-                      fontSize: tokens.typography.small.size,
-                      fontWeight: 500,
-                      backgroundColor: isSelected ? tokens.colors.status.upcomingBg : tokens.colors.bg.surface1,
-                      color: isSelected ? tokens.colors.brand.primary : tokens.colors.text.secondary,
-                      border: isSelected ? `2px solid ${tokens.colors.brand.primary}4D` : 'none',
-                      boxShadow: isSelected ? tokens.shadow.glow : 'none',
-                      transform: isSelected ? 'scale(1.02)' : 'scale(1)',
-                      transition: `all ${tokens.motion.duration.fast} ${tokens.motion.easing.default}`,
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.backgroundColor = tokens.colors.bg.surface2;
-                        e.currentTarget.style.color = tokens.colors.text.primary;
-                        e.currentTarget.style.transform = 'scale(1.02)';
-                      } else {
-                        e.currentTarget.style.transform = 'scale(1.05)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.backgroundColor = tokens.colors.bg.surface1;
-                        e.currentTarget.style.color = tokens.colors.text.secondary;
-                        e.currentTarget.style.transform = 'scale(1)';
-                      } else {
-                        e.currentTarget.style.transform = 'scale(1.02)';
-                      }
-                    }}
                   >
                     {filter.label}
-                    {isSelected && count > 0 && (
-                      <span className="ml-1.5 opacity-80" style={{ fontSize: tokens.typography.micro.size }}>
-                        • {count}
-                      </span>
-                    )}
-                  </button>
+                  </Chip>
                 );
               })}
               
-              {/* Filters button */}
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 transition-all"
-                style={{
-                  borderRadius: tokens.radius.full,
-                  padding: `${tokens.spacing.xs} ${tokens.spacing.md}`,
-                  fontSize: tokens.typography.small.size,
-                  fontWeight: 500,
-                  backgroundColor: tokens.colors.bg.surface1,
-                  color: tokens.colors.text.secondary,
-                  transition: `all ${tokens.motion.duration.fast} ${tokens.motion.easing.default}`,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = tokens.colors.bg.surface2;
-                  e.currentTarget.style.color = tokens.colors.text.primary;
-                  e.currentTarget.style.transform = 'scale(1.02)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = tokens.colors.bg.surface1;
-                  e.currentTarget.style.color = tokens.colors.text.secondary;
-                  e.currentTarget.style.transform = 'scale(1)';
-                }}
-              >
-                <SlidersHorizontal style={{ width: tokens.icon.inline, height: tokens.icon.inline }} />
+              <Chip onClick={() => setShowFilters(!showFilters)} icon={<SlidersHorizontal />}>
                 Filters
-              </button>
+              </Chip>
               
               {/* Reset chip */}
               <AnimatePresence>
                 {hasActiveFilters && (
-                  <motion.button
+                  <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
-                    onClick={clearAllFilters}
-                    className="flex items-center gap-1.5 transition-all"
-                    style={{
-                      borderRadius: tokens.radius.full,
-                      padding: `${tokens.spacing.xs} 14px`,
-                      fontSize: tokens.typography.small.size,
-                      fontWeight: 500,
-                      backgroundColor: tokens.colors.bg.surface2,
-                      color: tokens.colors.text.primary,
-                      transition: `all ${tokens.motion.duration.fast} ${tokens.motion.easing.default}`,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = tokens.colors.bg.surface3;
-                      e.currentTarget.style.transform = 'scale(1.02)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = tokens.colors.bg.surface2;
-                      e.currentTarget.style.transform = 'scale(1)';
-                    }}
                   >
-                    <X style={{ width: '14px', height: '14px' }} />
-                    Reset
-                  </motion.button>
+                    <Chip onClick={clearAllFilters} icon={<X />}>
+                      Reset
+                    </Chip>
+                  </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
-            {/* Sort selector + result count */}
+            {/* Result count + Sort */}
             <div className="flex items-center justify-between">
-              <div style={{ fontSize: tokens.typography.small.size, color: tokens.colors.text.tertiary }}>
+              <div style={{ fontSize: tokens.typography.small.size, color: tokens.colors.text.tertiary, fontWeight: 500 }}>
                 {filteredEvents.length} events
               </div>
               <div className="relative">
@@ -438,7 +303,7 @@ export function Events() {
                     <option key={opt.id} value={opt.id}>{opt.label}</option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" style={{ width: tokens.icon.inline, height: tokens.icon.inline, color: tokens.colors.text.muted }} />
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" style={{ width: '16px', height: '16px', color: tokens.colors.text.muted }} />
               </div>
             </div>
           </div>
@@ -447,7 +312,7 @@ export function Events() {
         {/* Spacer when sticky */}
         {isSticky && <div className="h-[160px]" />}
 
-        {/* Loading skeletons with shimmer */}
+        {/* Loading skeletons */}
         {loading ? (
           <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[...Array(8)].map((_, i) => (
@@ -491,7 +356,14 @@ export function Events() {
               className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             >
               {filteredEvents.map((event, i) => (
-                <EventCard key={event.id} event={event} index={i} onClick={() => setSelectedEvent(event)} />
+                <EventCard 
+                  key={event.id} 
+                  event={event} 
+                  index={i} 
+                  isFavorite={favorites.has(event.id)}
+                  onToggleFavorite={(e) => toggleFavorite(event.id, e)}
+                  onClick={() => setSelectedEvent(event)} 
+                />
               ))}
             </motion.div>
 
@@ -521,25 +393,19 @@ export function Events() {
           background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
           animation: shimmer 1.8s infinite;
         }
-        @media (prefers-reduced-motion: reduce) {
-          .ambient-orb,
-          .proximity-glow,
-          .glyph-pattern {
-            animation: none !important;
-            transform: none !important;
-            transition: none !important;
-          }
-          .shimmer-effect {
-            display: none;
-          }
-        }
       `}</style>
     </main>
   );
 }
 
-// Extract EventCard component for clarity
-function EventCard({ event, index, onClick }: { event: Event; index: number; onClick: () => void }) {
+// Updated EventCard with favorite heart and hover CTA
+function EventCard({ event, index, isFavorite, onToggleFavorite, onClick }: { 
+  event: Event; 
+  index: number; 
+  isFavorite: boolean;
+  onToggleFavorite: (e: React.MouseEvent) => void;
+  onClick: () => void;
+}) {
   const availabilityPercent = (event.available / event.total) * 100;
   const isLowStock = availabilityPercent < 15;
   
@@ -560,46 +426,47 @@ function EventCard({ event, index, onClick }: { event: Event; index: number; onC
         borderRadius: tokens.radius.lg,
         border: `1px solid ${tokens.colors.border.default}`,
         backgroundColor: tokens.colors.bg.card,
-        transition: `all ${tokens.motion.duration.base} ${tokens.motion.easing.default}`,
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-4px)';
+        e.currentTarget.style.transform = `translateY(-${tokens.card.hoverLift}) scale(${tokens.card.hoverScale})`;
         e.currentTarget.style.borderColor = tokens.colors.border.hover;
         e.currentTarget.style.backgroundColor = tokens.colors.bg.cardHover;
-        e.currentTarget.style.boxShadow = tokens.shadow[2];
+        e.currentTarget.style.boxShadow = tokens.shadow.elevated;
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.transform = 'translateY(0) scale(1)';
         e.currentTarget.style.borderColor = tokens.colors.border.default;
         e.currentTarget.style.backgroundColor = tokens.colors.bg.card;
         e.currentTarget.style.boxShadow = 'none';
       }}
       onFocus={(e) => {
-        e.currentTarget.style.outline = `2px solid ${tokens.colors.brand.primary}`;
-        e.currentTarget.style.outlineOffset = '2px';
+        e.currentTarget.style.outline = tokens.focus.ring;
+        e.currentTarget.style.outlineOffset = tokens.focus.offset;
       }}
       onBlur={(e) => {
         e.currentTarget.style.outline = 'none';
       }}
     >
-      {/* Cover image */}
-      <div className="relative aspect-[16/9] overflow-hidden" style={{ background: `linear-gradient(135deg, ${tokens.colors.brand.primary}26 0%, ${tokens.colors.brand.secondary}1A 100%)` }}>
-        {event.coverImage ? (
-          <img 
-            src={event.coverImage} 
-            alt={event.title}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center" style={{ color: tokens.colors.text.muted, opacity: 0.3 }}>
-            <Calendar style={{ width: tokens.icon.empty, height: tokens.icon.empty }} />
-          </div>
-        )}
+      {/* Cover image with uniform 56% aspect */}
+      <div className="relative overflow-hidden" style={{ paddingBottom: tokens.card.imageAspect, background: `linear-gradient(135deg, ${tokens.colors.brand.primary}26 0%, ${tokens.colors.brand.secondary}1A 100%)` }}>
+        <div className="absolute inset-0">
+          {event.coverImage ? (
+            <img 
+              src={event.coverImage} 
+              alt={event.title}
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              loading="lazy"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center" style={{ color: tokens.colors.text.muted, opacity: 0.3 }}>
+              <Calendar style={{ width: tokens.icon.empty, height: tokens.icon.empty }} />
+            </div>
+          )}
+        </div>
         
-        {/* Date pill - top left */}
+        {/* Date badge - top left */}
         <div className="absolute left-3 top-3 backdrop-blur-sm" style={{
-          borderRadius: tokens.radius.md,
+          borderRadius: tokens.radius.sm,
           backgroundColor: 'rgba(0, 0, 0, 0.7)',
           padding: `${tokens.spacing.xs} 10px`,
         }}>
@@ -623,37 +490,54 @@ function EventCard({ event, index, onClick }: { event: Event; index: number; onC
           </div>
         </div>
 
-        {/* Badges - top right */}
+        {/* Badges + Favorite - top right */}
         <div className="absolute right-3 top-3 flex flex-col gap-1.5">
           {event.verified && (
-            <div className="flex items-center gap-1 backdrop-blur-sm" style={{
-              borderRadius: tokens.radius.md,
-              backgroundColor: tokens.colors.status.verifiedBg,
-              padding: `4px ${tokens.spacing.xs}`,
-            }}>
-              <BadgeCheck style={{ width: '12px', height: '12px', color: tokens.colors.status.verified }} />
-              <span style={{ fontSize: '10px', fontWeight: 600, color: tokens.colors.status.verified }}>Verified</span>
-            </div>
+            <Chip variant="verified" size="sm" icon={<BadgeCheck />}>
+              Verified
+            </Chip>
           )}
           {event.trending && (
-            <div className="flex items-center gap-1 backdrop-blur-sm" style={{
-              borderRadius: tokens.radius.md,
-              backgroundColor: tokens.colors.status.hotBg,
-              padding: `4px ${tokens.spacing.xs}`,
-            }}>
-              <Sparkles style={{ width: '12px', height: '12px', color: tokens.colors.status.hot }} />
-              <span style={{ fontSize: '10px', fontWeight: 600, color: tokens.colors.status.hot }}>Hot</span>
-            </div>
+            <Chip variant="hot" size="sm" icon={<Sparkles />}>
+              Hot
+            </Chip>
           )}
+          <button
+            onClick={onToggleFavorite}
+            className="flex items-center justify-center backdrop-blur-sm transition-all"
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: tokens.radius.md,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              border: 'none',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+              e.currentTarget.style.transform = 'scale(1.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            <Heart 
+              style={{ 
+                width: '16px', 
+                height: '16px',
+                fill: isFavorite ? tokens.colors.status.error : 'none',
+                stroke: isFavorite ? tokens.colors.status.error : '#fff',
+                strokeWidth: tokens.icon.stroke,
+              }} 
+            />
+          </button>
         </div>
 
-        {/* Gradient overlay */}
-        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/60 to-transparent" />
-        
-        {/* Hover arrow */}
-        <div className="absolute bottom-3 right-3 flex items-center gap-1 text-white opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-1" style={{ fontSize: tokens.typography.micro.size, fontWeight: 500 }}>
-          <ArrowRight style={{ width: tokens.icon.inline, height: tokens.icon.inline }} />
-        </div>
+        {/* Gradient scrim - uniform 22% */}
+        <div 
+          className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent" 
+          style={{ height: tokens.card.scrimHeight, opacity: tokens.card.scrimAlpha }}
+        />
       </div>
 
       {/* Content */}
@@ -669,12 +553,12 @@ function EventCard({ event, index, onClick }: { event: Event; index: number; onC
         </h3>
         
         <div className="mb-3 space-y-1">
-          <div className="flex items-center gap-1.5" style={{ fontSize: tokens.typography.small.size, lineHeight: tokens.typography.small.lineHeight, color: tokens.colors.text.tertiary }}>
-            <MapPin className="flex-shrink-0" style={{ width: tokens.icon.inline, height: tokens.icon.inline }} />
+          <div className="flex items-center gap-1.5" style={{ fontSize: tokens.typography.small.size, color: tokens.colors.text.tertiary }}>
+            <MapPin className="flex-shrink-0" style={{ width: '16px', height: '16px', opacity: tokens.icon.opacity }} />
             <span className="line-clamp-1">{event.venue}, {event.city}</span>
           </div>
-          <div className="flex items-center gap-1.5" style={{ fontSize: tokens.typography.small.size, lineHeight: tokens.typography.small.lineHeight, color: tokens.colors.text.tertiary }}>
-            <Calendar className="flex-shrink-0" style={{ width: tokens.icon.inline, height: tokens.icon.inline }} />
+          <div className="flex items-center gap-1.5" style={{ fontSize: tokens.typography.small.size, color: tokens.colors.text.tertiary }}>
+            <Calendar className="flex-shrink-0" style={{ width: '16px', height: '16px', opacity: tokens.icon.opacity }} />
             <span>
               {new Date(event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} • {event.time}
             </span>
@@ -700,20 +584,17 @@ function EventCard({ event, index, onClick }: { event: Event; index: number; onC
               {isLowStock && '⚡ '}
               {event.available} / {event.total}
             </div>
-            {isLowStock && (
-              <div className="mt-1 h-1 w-16 overflow-hidden" style={{ borderRadius: tokens.radius.full, backgroundColor: tokens.colors.bg.surface2 }}>
-                <div 
-                  className="h-full transition-all"
-                  style={{ width: `${availabilityPercent}%`, backgroundColor: tokens.colors.status.hot }}
-                />
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Hover CTA bar */}
-        <div className="mt-3 overflow-hidden opacity-0 transition-all duration-200 group-hover:opacity-100">
-          <div className="flex items-center justify-center gap-2" style={{
+        {/* Hover CTA - slides up from bottom */}
+        <motion.div 
+          className="mt-3 overflow-hidden"
+          initial={{ opacity: 0, y: 8 }}
+          whileHover={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.12 }}
+        >
+          <div className="flex items-center justify-center gap-2 transition-all" style={{
             borderRadius: tokens.radius.md,
             border: `1px solid ${tokens.colors.brand.primary}4D`,
             backgroundColor: `${tokens.colors.brand.primary}1A`,
@@ -723,9 +604,9 @@ function EventCard({ event, index, onClick }: { event: Event; index: number; onC
             color: tokens.colors.brand.primary,
           }}>
             View tickets
-            <ArrowRight style={{ width: tokens.icon.inline, height: tokens.icon.inline }} />
+            <ArrowRight style={{ width: '16px', height: '16px' }} />
           </div>
-        </div>
+        </motion.div>
       </div>
     </motion.button>
   );
@@ -799,7 +680,7 @@ function EventDetailSheet({ event, onClose }: { event: Event; onClose: () => voi
           borderRadius: tokens.radius.xl,
           border: `1px solid ${tokens.colors.border.default}`,
           backgroundColor: '#0a1929',
-          boxShadow: tokens.shadow[3],
+          boxShadow: tokens.shadow.elevated,
         }}
       >
         <button
