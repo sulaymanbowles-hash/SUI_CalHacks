@@ -1,0 +1,19 @@
+{
+  "buildCommand": "cd web && npm install && npm run build",
+  "outputDirectory": "web/dist",
+  "devCommand": "cd web && npm run dev",
+  "installCommand": "cd web && npm install",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "env": {
+    "VITE_PACKAGE_ID": "0xbab930f22032026668a650f16bd23e594bc8c69c8e86c4b2ec495dc02f93bbcf",
+    "VITE_POLICY_ID": "0x6c9a891026c1031c138c6f132cf596bae516d834709c03e2dddceeb5aa8b6456",
+    "VITE_WALRUS_PUBLISHER_URL": "https://publisher.walrus-testnet.walrus.space",
+    "VITE_WALRUS_AGGREGATOR_URL": "https://aggregator.walrus-testnet.walrus.space"
+  }
+}

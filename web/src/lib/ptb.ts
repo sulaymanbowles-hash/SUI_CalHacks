@@ -1257,3 +1257,104 @@ export async function atomicGoLive(params: AtomicGoLiveParams): Promise<AtomicGo
   // Step 2: Check for existing Kiosk or create new one
   params.onProgress?.('kiosk', 'Setting up sales channel...');
   
+  let kioskId: string | undefined;
+  
+  const ownedObjects = await client.getOwnedObjects({
+    owner: address,
+    filter: { StructType: '0x2::kiosk::Kiosk' },
+    options: { showContent: true },
+  });
+  
+  if (ownedObjects.data.length > 0 && ownedObjects.data[0].data) {
+    kioskId = ownedObjects.data[0].data.objectId;
+    console.log('✓ Using existing Kiosk:', kioskId);
+  } else {
+    // Create new Kiosk
+    const tx2 = new Transaction();
+    tx2.moveCall({
+      target: '0x2::kiosk::default',
+      arguments: [],
+    });
+    tx2.setGasBudget(10_000_000);
+    
+    const result2 = await client.signAndExecuteTransaction({
+      signer,
+      transaction: tx2,
+      options: { showEffects: true, showObjectChanges: true },
+    });
+    
+    if (result2.effects?.status?.status !== 'success') {
+      throw new Error(`Kiosk creation failed: ${result2.effects?.status?.error}`);
+    }
+    
+    kioskId = result2.objectChanges?.find((c: any) => 
+      c.type === 'created' && c.objectType?.includes('::kiosk::Kiosk')
+    )?.objectId as string;
+    
+    console.log('✓ Kiosk created:', kioskId);
+    await new Promise(resolve => setTimeout(resolve, 3000));
+  }
+  
+  // Step 3: Create TicketClass for each ticket type (separate transactions)
+  params.onProgress?.('classes', `Creating ${params.ticketTypes.length} ticket types...`);
+  
+  const classResults: { classId: string; name: string; supply: number; priceMist: number }[] = [];
+  
+  for (const ticketType of params.ticketTypes) {
+    const tx3 = new Transaction();
+    tx3.moveCall({
+      target: `${PACKAGE_ID}::class::new`,
+      arguments: [
+        tx3.object(eventId),
+        tx3.pure.string(ticketType.name),
+        tx3.pure.string(ticketType.color),
+        tx3.pure.u64(ticketType.priceMist),
+        tx3.pure.u64(ticketType.supply),
+        tx3.pure.address(params.artistAddress),
+        tx3.pure.address(params.organizerAddress),
+        tx3.pure.u16(params.artistBps),
+        tx3.pure.u16(params.organizerBps),
+      ],
+    });
+    tx3.setGasBudget(5_000_000);
+    
+    const result3 = await client.signAndExecuteTransaction({
+      signer,
+      transaction: tx3,
+      options: { showEffects: true, showObjectChanges: true },
+    });
+    
+    if (result3.effects?.status?.status !== 'success') {
+      throw new Error(`Class creation failed: ${result3.effects?.status?.error}`);
+    }
+    
+    const classId = result3.objectChanges?.find((c: any) => 
+      c.type === 'created' && c.objectType?.includes('::class::TicketClass')
+    )?.objectId as string;
+    
+    if (!classId) {
+      throw new Error('Failed to extract class ID from transaction');
+    }
+    
+    classResults.push({
+      classId,
+      name: ticketType.name,
+      supply: ticketType.supply,
+      priceMist: ticketType.priceMist,
+    });
+    
+    console.log(`✓ TicketClass created: ${ticketType.name} (${classId})`);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+  }
+  
+  params.onProgress?.('success', 'Event published successfully!');
+  
+  return {
+    digest: result1.digest,
+    eventId,
+    gateKeeperCapId,
+    eventCapId,
+    ticketClasses: classResults,
+    kioskId: kioskId!,
+  };
+}
