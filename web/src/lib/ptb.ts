@@ -110,13 +110,8 @@ export interface PublishGatedResult {
 
 /**
  * PTB: Publish Event (Organizer Wizard)
- * Single atomic transaction that:
- * 1. Creates event + GateKeeperCap
- * 2. For each ticket type:
- *    - Creates TicketClass with royalty config
- *    - Creates/reuses Kiosk
- *    - (Optional) Pre-mints and lists sample tickets
- * 3. Sets event to LIVE status
+ * Creates event and ticket classes in separate transactions
+ * Note: event::new and class::new are entry functions and cannot be composed in a single PTB
  */
 export async function publishEvent(params: PublishEventParams): Promise<PublishEventResult> {
   const client = getClient();
@@ -125,27 +120,60 @@ export async function publishEvent(params: PublishEventParams): Promise<PublishE
   
   params.onProgress?.('init', 'Preparing transaction...');
   
-  const tx = new Transaction();
-  
   // Calculate total supply from all ticket types
   const totalSupply = params.ticketTypes.reduce((sum, ticket) => sum + ticket.supply, 0);
   
-  // Step 1: Create Event (returns Event object and GateKeeperCap)
+  // Step 1: Create Event in first transaction
   params.onProgress?.('event', 'Creating event...');
   
-  const [eventObj] = tx.moveCall({
+  const tx1 = new Transaction();
+  tx1.moveCall({
     target: `${PACKAGE_ID}::event::new`,
     arguments: [
-      tx.pure.string(params.eventName),
-      tx.pure.string(params.location),
-      tx.pure.u64(params.startsAt),
-      tx.pure.u64(params.endsAt),
-      tx.pure.string(params.posterCid || 'walrus://placeholder'),
-      tx.pure.u64(totalSupply), // ADD: supply_total parameter
+      tx1.pure.string(params.eventName),
+      tx1.pure.string(params.location),
+      tx1.pure.u64(params.startsAt),
+      tx1.pure.u64(params.endsAt),
+      tx1.pure.string(params.posterCid || 'walrus://placeholder'),
+      tx1.pure.u64(totalSupply),
     ],
   });
+  tx1.setGasBudget(10_000_000);
   
-  // Note: GateKeeperCap is automatically transferred to sender by the new() function
+  const result1 = await client.signAndExecuteTransaction({
+    signer,
+    transaction: tx1,
+    options: { 
+      showEffects: true, 
+      showObjectChanges: true,
+    },
+  });
+  
+  if (result1.effects?.status?.status !== 'success') {
+    throw new Error(`Event creation failed: ${result1.effects?.status?.error}`);
+  }
+  
+  // Extract created object IDs
+  const eventId = result1.objectChanges?.find((c: any) => 
+    c.type === 'created' && c.objectType?.includes('::event::Event')
+  )?.objectId as string | undefined;
+  
+  const gateKeeperCapId = result1.objectChanges?.find((c: any) => 
+    c.type === 'created' && c.objectType?.includes('::event::GateKeeperCap')
+  )?.objectId as string | undefined;
+  
+  const eventCapId = result1.objectChanges?.find((c: any) => 
+    c.type === 'created' && c.objectType?.includes('::event::EventCap')
+  )?.objectId as string | undefined;
+  
+  if (!eventId || !gateKeeperCapId) {
+    throw new Error('Failed to extract event or capability ID from transaction');
+  }
+  
+  console.log('✓ Event created:', { eventId, gateKeeperCapId, eventCapId });
+  
+  // Wait for finalization
+  await new Promise(resolve => setTimeout(resolve, 2000));
   
   // Step 2: Check for existing Kiosk or create new one
   params.onProgress?.('kiosk', 'Setting up sales channel...');
@@ -160,119 +188,98 @@ export async function publishEvent(params: PublishEventParams): Promise<PublishE
   
   if (ownedObjects.data.length > 0 && ownedObjects.data[0].data) {
     kioskId = ownedObjects.data[0].data.objectId;
+    console.log('✓ Using existing Kiosk:', kioskId);
   } else {
-    // Create new Kiosk in this transaction
-    const [kiosk, kioskCap] = tx.moveCall({
-      target: '0x2::kiosk::new',
+    // Create new Kiosk
+    const tx2 = new Transaction();
+    tx2.moveCall({
+      target: '0x2::kiosk::default',
       arguments: [],
     });
+    tx2.setGasBudget(10_000_000);
     
-    // Share the kiosk
-    tx.moveCall({
-      target: '0x2::kiosk::share',
-      arguments: [kiosk],
+    const result2 = await client.signAndExecuteTransaction({
+      signer,
+      transaction: tx2,
+      options: { showEffects: true, showObjectChanges: true },
     });
     
-    // Transfer cap to sender
-    tx.transferObjects([kioskCap], tx.pure.address(address));
+    if (result2.effects?.status?.status !== 'success') {
+      throw new Error(`Kiosk creation failed: ${result2.effects?.status?.error}`);
+    }
+    
+    kioskId = result2.objectChanges?.find((c: any) => 
+      c.type === 'created' && c.objectType?.includes('::kiosk::Kiosk')
+    )?.objectId as string;
+    
+    console.log('✓ Kiosk created:', kioskId);
+    await new Promise(resolve => setTimeout(resolve, 2000));
   }
   
-  // Step 3: Create TicketClass for each ticket type
+  // Step 3: Create TicketClass for each ticket type (separate transactions)
   params.onProgress?.('classes', `Creating ${params.ticketTypes.length} ticket types...`);
   
-  const classResults: { classId?: string; name: string; supply: number }[] = [];
+  const classResults: { classId: string; name: string; supply: number }[] = [];
   
   for (const ticketType of params.ticketTypes) {
-    // Create TicketClass with royalty config
-    tx.moveCall({
+    const tx3 = new Transaction();
+    tx3.moveCall({
       target: `${PACKAGE_ID}::class::new`,
       arguments: [
-        eventObj,
-        tx.pure.string(ticketType.name),
-        tx.pure.string(ticketType.color),
-        tx.pure.u64(toMist(ticketType.price)),
-        tx.pure.u64(ticketType.supply),
-        tx.pure.address(params.artistAddress),
-        tx.pure.address(params.organizerAddress),
-        tx.pure.u16(ticketType.artistBps),
-        tx.pure.u16(ticketType.organizerBps),
+        tx3.object(eventId),
+        tx3.pure.string(ticketType.name),
+        tx3.pure.string(ticketType.color),
+        tx3.pure.u64(toMist(ticketType.price)),
+        tx3.pure.u64(ticketType.supply),
+        tx3.pure.address(params.artistAddress),
+        tx3.pure.address(params.organizerAddress),
+        tx3.pure.u16(ticketType.artistBps),
+        tx3.pure.u16(ticketType.organizerBps),
       ],
     });
+    tx3.setGasBudget(5_000_000);
+    
+    const result3 = await client.signAndExecuteTransaction({
+      signer,
+      transaction: tx3,
+      options: { showEffects: true, showObjectChanges: true },
+    });
+    
+    if (result3.effects?.status?.status !== 'success') {
+      throw new Error(`Class creation failed: ${result3.effects?.status?.error}`);
+    }
+    
+    const classId = result3.objectChanges?.find((c: any) => 
+      c.type === 'created' && c.objectType?.includes('::class::TicketClass')
+    )?.objectId as string;
+    
+    if (!classId) {
+      throw new Error('Failed to extract class ID from transaction');
+    }
     
     classResults.push({
+      classId,
       name: ticketType.name,
       supply: ticketType.supply,
     });
-  }
-  
-  // Note: Event remains in DRAFT status. Use event::publish to set LIVE after configuring payouts/channels
-  
-  // Execute transaction
-  tx.setGasBudget(50_000_000);
-  
-  params.onProgress?.('executing', 'Submitting to blockchain...');
-  
-  const result = await client.signAndExecuteTransaction({
-    signer,
-    transaction: tx,
-    options: { 
-      showEffects: true, 
-      showObjectChanges: true,
-      showEvents: true,
-    },
-  });
-  
-  if (result.effects?.status?.status !== 'success') {
-    throw new Error(`Event publication failed: ${result.effects?.status?.error}`);
-  }
-  
-  // Extract created object IDs with proper type checking
-  const eventId = result.objectChanges?.find((c: any) => 
-    c.type === 'created' && c.objectType?.includes('::event::Event')
-  )?.objectId as string | undefined;
-  
-  const gateKeeperCapId = result.objectChanges?.find((c: any) => 
-    c.type === 'created' && c.objectType?.includes('::event::GateKeeperCap')
-  )?.objectId as string | undefined;
-  
-  const createdClasses = result.objectChanges?.filter((c: any) => 
-    c.type === 'created' && c.objectType?.includes('::class::TicketClass')
-  ) || [];
-  
-  // Map class IDs to results
-  createdClasses.forEach((classChange: any, index: number) => {
-    if (classResults[index] && classChange.objectId) {
-      classResults[index].classId = classChange.objectId as string;
-    }
-  });
-  
-  // Get kiosk ID if it was just created
-  if (!kioskId) {
-    const createdKiosk = result.objectChanges?.find((c: any) => 
-      c.type === 'created' && c.objectType?.includes('::kiosk::Kiosk')
-    );
-    if (createdKiosk && 'objectId' in createdKiosk) {
-      kioskId = createdKiosk.objectId as string;
-    }
-  }
-  
-  if (!eventId || !gateKeeperCapId) {
-    throw new Error('Failed to extract event or capability ID from transaction');
+    
+    console.log(`✓ TicketClass created: ${ticketType.name} (${classId})`);
+    await new Promise(resolve => setTimeout(resolve, 1500));
   }
   
   params.onProgress?.('success', 'Event published successfully!');
   
   return {
-    digest: result.digest,
+    digest: result1.digest,
     eventId,
     gateKeeperCapId,
     ticketClasses: classResults.map(r => ({
-      classId: r.classId!,
+      classId: r.classId,
       kioskId: kioskId!,
       name: r.name,
       supply: r.supply,
     })),
-    effects: result.effects,
+    effects: result1.effects,
   };
 }
 
@@ -301,61 +308,122 @@ export interface CreateEventAtomicResult {
 }
 
 /**
- * PTB: Create Event (Atomic)
- * Creates event + class + ticket + policy + kiosk + listing in ONE transaction
+ * PTB: Create Event (Separate Transactions)
+ * Creates event + class + ticket + kiosk + listing in separate transactions
+ * Note: event::new and class::new are entry functions and cannot be composed in PTBs
  */
 export async function createEventAtomicWeb(params: CreateEventAtomicParams): Promise<CreateEventAtomicResult> {
   const client = getClient();
   const signer = await getSigner(client);
   const address = signer.getPublicKey().toSuiAddress();
   
-  console.log('Creating event atomically (with policy)...', params);
-  
-  const tx = new Transaction();
+  console.log('Creating event with separate transactions...', params);
   
   // Step 1: Create Event
-  const [eventObj] = tx.moveCall({
+  console.log('Step 1: Creating event...');
+  const tx1 = new Transaction();
+  tx1.moveCall({
     target: `${PACKAGE_ID}::event::new`,
     arguments: [
-      tx.pure.string(params.name),
-      tx.pure.string('Venue TBD'),
-      tx.pure.u64(params.startsAt),
-      tx.pure.u64(params.endsAt),
-      tx.pure.string(params.posterCid || 'walrus://placeholder'),
-      tx.pure.u64(params.supply), // ADD: supply_total parameter
+      tx1.pure.string(params.name),
+      tx1.pure.string('Venue TBD'),
+      tx1.pure.u64(params.startsAt),
+      tx1.pure.u64(params.endsAt),
+      tx1.pure.string(params.posterCid || 'walrus://placeholder'),
+      tx1.pure.u64(params.supply),
     ],
   });
+  tx1.setGasBudget(10_000_000);
   
-  // Step 2: Create TicketClass with royalty config
-  const [classObj] = tx.moveCall({
+  const result1 = await client.signAndExecuteTransaction({
+    signer,
+    transaction: tx1,
+    options: { showEffects: true, showObjectChanges: true },
+  });
+  
+  if (result1.effects?.status?.status !== 'success') {
+    throw new Error(`Event creation failed: ${result1.effects?.status?.error}`);
+  }
+  
+  const eventId = result1.objectChanges?.find((c: any) => 
+    c.type === 'created' && c.objectType?.includes('::event::Event')
+  )?.objectId as string;
+  
+  if (!eventId) throw new Error('Event ID not found');
+  console.log('✓ Event created:', eventId);
+  
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // Step 2: Create TicketClass
+  console.log('Step 2: Creating ticket class...');
+  const tx2 = new Transaction();
+  tx2.moveCall({
     target: `${PACKAGE_ID}::class::new`,
     arguments: [
-      eventObj,
-      tx.pure.string('General Admission'),
-      tx.pure.string('#4DA2FF'),
-      tx.pure.u64(toMist(params.priceSui)),
-      tx.pure.u64(params.supply),
-      tx.pure.address(address), // artist (90%)
-      tx.pure.address(address), // organizer (8%)
-      tx.pure.u16(9000), // 90% artist
-      tx.pure.u16(800),  // 8% organizer (2% platform implicit)
+      tx2.object(eventId),
+      tx2.pure.string('General Admission'),
+      tx2.pure.string('#4DA2FF'),
+      tx2.pure.u64(toMist(params.priceSui)),
+      tx2.pure.u64(params.supply),
+      tx2.pure.address(address),
+      tx2.pure.address(address),
+      tx2.pure.u16(9000),
+      tx2.pure.u16(800),
     ],
   });
+  tx2.setGasBudget(5_000_000);
   
-  // Step 3: Create Transfer Policy (or use existing POLICY_ID)
-  // For now, we'll reference the existing shared policy from env
-  // In production, you could create a new policy here if needed
-  const policyId = POLICY_ID;
-  
-  // Step 4: Mint ticket from the class
-  const [ticket] = tx.moveCall({
-    target: `${PACKAGE_ID}::ticket::mint`,
-    arguments: [classObj],
+  const result2 = await client.signAndExecuteTransaction({
+    signer,
+    transaction: tx2,
+    options: { showEffects: true, showObjectChanges: true },
   });
   
-  // Step 5: Check for existing Kiosk or create new one in same PTB
-  let kioskId: string | undefined;
-  let kioskCapId: string | undefined;
+  if (result2.effects?.status?.status !== 'success') {
+    throw new Error(`Class creation failed: ${result2.effects?.status?.error}`);
+  }
+  
+  const classId = result2.objectChanges?.find((c: any) => 
+    c.type === 'created' && c.objectType?.includes('::class::TicketClass')
+  )?.objectId as string;
+  
+  if (!classId) throw new Error('Class ID not found');
+  console.log('✓ Class created:', classId);
+  
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // Step 3: Mint ticket
+  console.log('Step 3: Minting ticket...');
+  const tx3 = new Transaction();
+  tx3.moveCall({
+    target: `${PACKAGE_ID}::ticket::mint`,
+    arguments: [tx3.object(classId)],
+  });
+  tx3.setGasBudget(5_000_000);
+  
+  const result3 = await client.signAndExecuteTransaction({
+    signer,
+    transaction: tx3,
+    options: { showEffects: true, showObjectChanges: true },
+  });
+  
+  if (result3.effects?.status?.status !== 'success') {
+    throw new Error(`Ticket minting failed: ${result3.effects?.status?.error}`);
+  }
+  
+  const ticketId = result3.objectChanges?.find((c: any) => 
+    c.type === 'created' && c.objectType?.includes('::ticket::Ticket')
+  )?.objectId as string;
+  
+  if (!ticketId) throw new Error('Ticket ID not found');
+  console.log('✓ Ticket minted:', ticketId);
+  
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // Step 4: Check for existing Kiosk or create new one
+  console.log('Step 4: Setting up kiosk...');
+  let kioskId: string;
+  let kioskCapId: string;
   
   const ownedObjects = await client.getOwnedObjects({
     owner: address,
@@ -371,130 +439,88 @@ export async function createEventAtomicWeb(params: CreateEventAtomicParams): Pro
       filter: { StructType: '0x2::kiosk::KioskOwnerCap' },
       options: { showContent: true },
     });
-    kioskCapId = capObjects.data[0]?.data?.objectId;
-    
+    kioskCapId = capObjects.data[0]?.data?.objectId!;
     console.log('✓ Using existing Kiosk:', kioskId);
-    
-    // Step 6: Place and list in existing Kiosk
-    tx.moveCall({
-      target: '0x2::kiosk::place',
-      typeArguments: [getTicketType()],
-      arguments: [
-        tx.object(kioskId),
-        tx.object(kioskCapId!),
-        ticket,
-      ],
-    });
-    
-    // Get the ticket ID after placing - we'll need to extract from results
-    // For listing, we'll use a separate transaction after this one completes
   } else {
-    // Step 6a: Create new Kiosk in same transaction
-    const [kiosk, kioskCap] = tx.moveCall({
+    const tx4 = new Transaction();
+    tx4.moveCall({
       target: '0x2::kiosk::default',
       arguments: [],
     });
+    tx4.setGasBudget(10_000_000);
     
-    // Place ticket in new kiosk
-    tx.moveCall({
-      target: '0x2::kiosk::place',
-      typeArguments: [getTicketType()],
-      arguments: [
-        kiosk,
-        kioskCap,
-        ticket,
-      ],
+    const result4 = await client.signAndExecuteTransaction({
+      signer,
+      transaction: tx4,
+      options: { showEffects: true, showObjectChanges: true },
     });
     
-    // Transfer cap to sender
-    tx.transferObjects([kioskCap], tx.pure.address(address));
-  }
-  
-  tx.setGasBudget(50_000_000);
-  
-  const result = await client.signAndExecuteTransaction({
-    signer,
-    transaction: tx,
-    options: { 
-      showEffects: true, 
-      showObjectChanges: true,
-      showEvents: true,
-    },
-  });
-  
-  if (result.effects?.status?.status !== 'success') {
-    throw new Error(`Event creation failed: ${result.effects?.status?.error}`);
-  }
-  
-  // Extract created object IDs
-  const eventId = result.objectChanges?.find((c: any) => 
-    c.type === 'created' && c.objectType?.includes('::event::Event')
-  )?.objectId as string;
-  
-  const classId = result.objectChanges?.find((c: any) => 
-    c.type === 'created' && c.objectType?.includes('::class::TicketClass')
-  )?.objectId as string;
-  
-  const ticketId = result.objectChanges?.find((c: any) => 
-    c.type === 'created' && c.objectType?.includes('::ticket::Ticket')
-  )?.objectId as string;
-  
-  // Extract kiosk if newly created
-  if (!kioskId) {
-    const kioskObj = result.objectChanges?.find((c: any) => 
+    if (result4.effects?.status?.status !== 'success') {
+      throw new Error(`Kiosk creation failed: ${result4.effects?.status?.error}`);
+    }
+    
+    const kioskObj = result4.objectChanges?.find((c: any) => 
       c.type === 'created' && c.objectType?.includes('::kiosk::Kiosk')
     );
-    kioskId = kioskObj?.objectId as string;
-    
-    const capObj = result.objectChanges?.find((c: any) => 
+    const capObj = result4.objectChanges?.find((c: any) => 
       c.type === 'created' && c.objectType?.includes('::kiosk::KioskOwnerCap')
     );
+    
+    kioskId = kioskObj?.objectId as string;
     kioskCapId = capObj?.objectId as string;
+    console.log('✓ Kiosk created:', kioskId);
+    
+    await new Promise(resolve => setTimeout(resolve, 2000));
   }
   
-  if (!eventId || !classId || !ticketId || !kioskId) {
-    throw new Error('Failed to extract created object IDs from transaction');
-  }
+  // Step 5: Place ticket in Kiosk and list it
+  console.log('Step 5: Listing ticket in kiosk...');
+  const tx5 = new Transaction();
   
-  console.log('✓ Event + Class + Ticket + Kiosk created:', { eventId, classId, ticketId, kioskId, policyId });
+  tx5.moveCall({
+    target: '0x2::kiosk::place',
+    typeArguments: [getTicketType()],
+    arguments: [
+      tx5.object(kioskId),
+      tx5.object(kioskCapId),
+      tx5.object(ticketId),
+    ],
+  });
   
-  // Step 7: List the ticket in Kiosk (separate transaction since we need the ticket ID)
-  await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for finalization
-  
-  const tx2 = new Transaction();
-  tx2.moveCall({
+  tx5.moveCall({
     target: '0x2::kiosk::list',
     typeArguments: [getTicketType()],
     arguments: [
-      tx2.object(kioskId),
-      tx2.object(kioskCapId!),
-      tx2.pure.id(ticketId),
-      tx2.pure.u64(toMist(params.priceSui)),
+      tx5.object(kioskId),
+      tx5.object(kioskCapId),
+      tx5.pure.id(ticketId),
+      tx5.pure.u64(toMist(params.priceSui)),
     ],
   });
-  tx2.setGasBudget(10_000_000);
   
-  const listResult = await client.signAndExecuteTransaction({
+  tx5.setGasBudget(10_000_000);
+  
+  const result5 = await client.signAndExecuteTransaction({
     signer,
-    transaction: tx2,
+    transaction: tx5,
     options: { showEffects: true, showObjectChanges: true },
   });
   
-  if (listResult.effects?.status?.status !== 'success') {
-    console.warn('Listing failed, but event was created:', listResult.effects?.status?.error);
-  } else {
-    console.log('✓ Ticket listed in Kiosk');
+  if (result5.effects?.status?.status !== 'success') {
+    throw new Error(`Kiosk listing failed: ${result5.effects?.status?.error}`);
   }
   
+  console.log('✓ Ticket listed in Kiosk');
+  
   return {
-    digest: result.digest,
+    digest: result1.digest,
     eventId,
     classId,
     ticketId,
     kioskId,
-    listingId: ticketId, // For Kiosk, listing ID is the item ID
-    policyId, // Include policy ID in response
-    effects: result.effects,
+    listingId: ticketId,
+    policyId: POLICY_ID,
+    effects: result1.effects,
   };
 }
 
